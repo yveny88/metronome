@@ -5,7 +5,7 @@ import sys
 # Ajouter le répertoire src au path Python
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.database.models import db
+from src.database.models import db, Song
 from src.routes.song_routes import song_bp, init_db
 
 app = Flask(__name__)
@@ -169,10 +169,40 @@ HTML = """
         .dot.active { color: red; }
         .controls { margin: 30px; }
         #start-stop { font-size: 1.2em; padding: 10px 30px; }
+        .song-selector {
+            margin: 20px auto;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            max-width: 400px;
+        }
+        .song-selector select {
+            width: 100%;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        .song-selector select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
     </style>
 </head>
 <body>
     <h1>🕒 Métronome Web Flask</h1>
+    
+    <!-- Nouveau menu déroulant des chansons -->
+    <div class="song-selector">
+        <select id="song-select">
+            <option value="">Sélectionner une chanson...</option>
+            {% for song in songs %}
+            <option value="{{ song.bpm }}">{{ song.title }} ({{ song.bpm }} BPM)</option>
+            {% endfor %}
+        </select>
+    </div>
+
     <div class="bpm-multi-container">
         <div class="bpm-col" id="col1">
             <input class="bpm-input" id="bpm-input-1" type="number" min="40" max="208" value="100" step="5" />
@@ -496,7 +526,9 @@ HTML = """
 
 @app.route("/")
 def index():
-    return render_template_string(HTML)
+    with app.app_context():
+        songs = Song.query.all()
+    return render_template_string(HTML, songs=songs)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False) 
