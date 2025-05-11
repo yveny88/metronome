@@ -5,7 +5,7 @@ import sys
 # Ajouter le répertoire src au path Python
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.database.models import db, Song
+from src.database.models import db, Song, GuitarGoal
 from src.routes.song_routes import song_bp, init_db
 
 app = Flask(__name__)
@@ -204,13 +204,35 @@ HTML = """
         .manage-songs-btn:hover {
             background-color: #2980b9;
         }
+        .nav-buttons {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .nav-btn:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
     <h1>🕒 Métronome Web Flask</h1>
     
-    <!-- Bouton de gestion des chansons -->
-    <a href="/manage-songs" class="manage-songs-btn">Gérer les chansons</a>
+    <!-- Boutons de navigation -->
+    <div class="nav-buttons">
+        <a href="/manage-songs" class="nav-btn">Gérer les chansons</a>
+        <a href="/guitar-goals" class="nav-btn">Objectifs Guitare</a>
+    </div>
     
     <!-- Menu déroulant des chansons -->
     <div class="song-selector">
@@ -759,6 +781,336 @@ MANAGE_SONGS_HTML = """
 </html>
 """
 
+# Template pour la page des objectifs guitare
+GUITAR_GOALS_HTML = """
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Objectifs Guitare - Métronome</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1, h2 { 
+            color: #2c3e50;
+            text-align: center;
+        }
+        .goal-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .goal-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .goal-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .goal-description {
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+        .goal-progress {
+            background: #ecf0f1;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: #3498db;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .back-btn:hover {
+            background-color: #2980b9;
+        }
+        .add-goal-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .edit-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .edit-btn:hover {
+            background-color: #27ae60;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎸 Objectifs Guitare</h1>
+        <a href="/" class="back-btn">Retour au Métronome</a>
+
+        {% if message %}
+        <div class="message {{ message_type }}">
+            {{ message }}
+        </div>
+        {% endif %}
+
+        <h2>Ajouter un nouvel objectif</h2>
+        <form action="/guitar-goals" method="POST" class="add-goal-form">
+            <div class="form-group">
+                <label for="title">Titre de l'objectif :</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description :</label>
+                <input type="text" id="description" name="description" required>
+            </div>
+            <div class="form-group">
+                <label for="category">Catégorie :</label>
+                <select id="category" name="category" required>
+                    <option value="technique">Technique</option>
+                    <option value="repertoire">Répertoire</option>
+                    <option value="theorie">Théorie</option>
+                    <option value="citnk">CiTNK</option>
+                    <option value="creativite">Créativité</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="target_bpm">BPM cible (optionnel) :</label>
+                <input type="number" id="target_bpm" name="target_bpm" min="40" max="208">
+            </div>
+            <div class="form-group">
+                <label for="progress">Progression (0-100) :</label>
+                <input type="number" id="progress" name="progress" min="0" max="100" value="0" required>
+            </div>
+            <button type="submit" class="submit-btn">Ajouter l'objectif</button>
+        </form>
+
+        <div class="goal-section">
+            <h2>Objectifs Techniques</h2>
+            {% for goal in goals if goal.category == 'technique' %}
+            <div class="goal-item">
+                <div class="goal-title">{{ goal.title }}</div>
+                <div class="goal-description">{{ goal.description }}</div>
+                {% if goal.target_bpm %}
+                <div class="goal-description">BPM cible : {{ goal.target_bpm }}</div>
+                {% endif %}
+                <div class="goal-progress">
+                    <div class="progress-bar" style="width: {{ goal.progress }}%"></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <a href="/edit-goal/{{ goal.id }}" class="edit-btn">Modifier</a>
+                    <a href="/delete-goal/{{ goal.id }}" class="delete-btn" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet objectif ?')">Supprimer</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="goal-section">
+            <h2>Répertoire</h2>
+            {% for goal in goals if goal.category == 'repertoire' %}
+            <div class="goal-item">
+                <div class="goal-title">{{ goal.title }}</div>
+                <div class="goal-description">{{ goal.description }}</div>
+                {% if goal.target_bpm %}
+                <div class="goal-description">BPM cible : {{ goal.target_bpm }}</div>
+                {% endif %}
+                <div class="goal-progress">
+                    <div class="progress-bar" style="width: {{ goal.progress }}%"></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <a href="/edit-goal/{{ goal.id }}" class="edit-btn">Modifier</a>
+                    <a href="/delete-goal/{{ goal.id }}" class="delete-btn" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet objectif ?')">Supprimer</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="goal-section">
+            <h2>Théorie</h2>
+            {% for goal in goals if goal.category == 'theorie' %}
+            <div class="goal-item">
+                <div class="goal-title">{{ goal.title }}</div>
+                <div class="goal-description">{{ goal.description }}</div>
+                {% if goal.target_bpm %}
+                <div class="goal-description">BPM cible : {{ goal.target_bpm }}</div>
+                {% endif %}
+                <div class="goal-progress">
+                    <div class="progress-bar" style="width: {{ goal.progress }}%"></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <a href="/edit-goal/{{ goal.id }}" class="edit-btn">Modifier</a>
+                    <a href="/delete-goal/{{ goal.id }}" class="delete-btn" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet objectif ?')">Supprimer</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="goal-section">
+            <h2>CiTNK</h2>
+            {% for goal in goals if goal.category == 'citnk' %}
+            <div class="goal-item">
+                <div class="goal-title">{{ goal.title }}</div>
+                <div class="goal-description">{{ goal.description }}</div>
+                {% if goal.target_bpm %}
+                <div class="goal-description">BPM cible : {{ goal.target_bpm }}</div>
+                {% endif %}
+                <div class="goal-progress">
+                    <div class="progress-bar" style="width: {{ goal.progress }}%"></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <a href="/edit-goal/{{ goal.id }}" class="edit-btn">Modifier</a>
+                    <a href="/delete-goal/{{ goal.id }}" class="delete-btn" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet objectif ?')">Supprimer</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="goal-section">
+            <h2>Créativité</h2>
+            {% for goal in goals if goal.category == 'creativite' %}
+            <div class="goal-item">
+                <div class="goal-title">{{ goal.title }}</div>
+                <div class="goal-description">{{ goal.description }}</div>
+                {% if goal.target_bpm %}
+                <div class="goal-description">BPM cible : {{ goal.target_bpm }}</div>
+                {% endif %}
+                <div class="goal-progress">
+                    <div class="progress-bar" style="width: {{ goal.progress }}%"></div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <a href="/edit-goal/{{ goal.id }}" class="edit-btn">Modifier</a>
+                    <a href="/delete-goal/{{ goal.id }}" class="delete-btn" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet objectif ?')">Supprimer</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+# Template pour l'édition d'un objectif
+EDIT_GOAL_HTML = """
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Modifier l'objectif - Métronome</title>
+    <style>
+        /* ... mêmes styles que GUITAR_GOALS_HTML ... */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Modifier l'objectif</h1>
+        <a href="/guitar-goals" class="back-btn">Retour aux objectifs</a>
+
+        <form action="/edit-goal/{{ goal.id }}" method="POST" class="add-goal-form">
+            <div class="form-group">
+                <label for="title">Titre de l'objectif :</label>
+                <input type="text" id="title" name="title" value="{{ goal.title }}" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description :</label>
+                <input type="text" id="description" name="description" value="{{ goal.description }}" required>
+            </div>
+            <div class="form-group">
+                <label for="category">Catégorie :</label>
+                <select id="category" name="category" required>
+                    <option value="technique" {% if goal.category == 'technique' %}selected{% endif %}>Technique</option>
+                    <option value="repertoire" {% if goal.category == 'repertoire' %}selected{% endif %}>Répertoire</option>
+                    <option value="theorie" {% if goal.category == 'theorie' %}selected{% endif %}>Théorie</option>
+                    <option value="citnk" {% if goal.category == 'citnk' %}selected{% endif %}>CiTNK</option>
+                    <option value="creativite" {% if goal.category == 'creativite' %}selected{% endif %}>Créativité</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="target_bpm">BPM cible (optionnel) :</label>
+                <input type="number" id="target_bpm" name="target_bpm" min="40" max="208" value="{{ goal.target_bpm or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="progress">Progression (0-100) :</label>
+                <input type="number" id="progress" name="progress" min="0" max="100" value="{{ goal.progress }}" required>
+            </div>
+            <button type="submit" class="submit-btn">Mettre à jour l'objectif</button>
+        </form>
+    </div>
+</body>
+</html>
+"""
+
 @app.route("/")
 def index():
     with app.app_context():
@@ -833,5 +1185,84 @@ def delete_song(song_id):
                 message_type="error"
             )
 
+@app.route("/guitar-goals", methods=['GET', 'POST'])
+def guitar_goals():
+    with app.app_context():
+        if request.method == 'POST':
+            try:
+                new_goal = GuitarGoal(
+                    title=request.form['title'],
+                    description=request.form['description'],
+                    category=request.form['category'],
+                    progress=int(request.form['progress']),
+                    target_bpm=int(request.form['target_bpm']) if request.form['target_bpm'] else None
+                )
+                db.session.add(new_goal)
+                db.session.commit()
+                return render_template_string(
+                    GUITAR_GOALS_HTML,
+                    goals=GuitarGoal.query.all(),
+                    message="Objectif ajouté avec succès !",
+                    message_type="success"
+                )
+            except Exception as e:
+                db.session.rollback()
+                return render_template_string(
+                    GUITAR_GOALS_HTML,
+                    goals=GuitarGoal.query.all(),
+                    message=f"Erreur lors de l'ajout de l'objectif : {str(e)}",
+                    message_type="error"
+                )
+        
+        return render_template_string(GUITAR_GOALS_HTML, goals=GuitarGoal.query.all())
+
+@app.route("/edit-goal/<int:goal_id>", methods=['GET', 'POST'])
+def edit_goal(goal_id):
+    with app.app_context():
+        goal = GuitarGoal.query.get_or_404(goal_id)
+        
+        if request.method == 'POST':
+            try:
+                goal.title = request.form['title']
+                goal.description = request.form['description']
+                goal.category = request.form['category']
+                goal.progress = int(request.form['progress'])
+                goal.target_bpm = int(request.form['target_bpm']) if request.form['target_bpm'] else None
+                
+                db.session.commit()
+                return redirect(url_for('guitar_goals'))
+            except Exception as e:
+                db.session.rollback()
+                return render_template_string(
+                    EDIT_GOAL_HTML,
+                    goal=goal,
+                    message=f"Erreur lors de la modification : {str(e)}",
+                    message_type="error"
+                )
+        
+        return render_template_string(EDIT_GOAL_HTML, goal=goal)
+
+@app.route("/delete-goal/<int:goal_id>")
+def delete_goal(goal_id):
+    with app.app_context():
+        try:
+            goal = GuitarGoal.query.get_or_404(goal_id)
+            db.session.delete(goal)
+            db.session.commit()
+            return render_template_string(
+                GUITAR_GOALS_HTML,
+                goals=GuitarGoal.query.all(),
+                message="Objectif supprimé avec succès !",
+                message_type="success"
+            )
+        except Exception as e:
+            db.session.rollback()
+            return render_template_string(
+                GUITAR_GOALS_HTML,
+                goals=GuitarGoal.query.all(),
+                message=f"Erreur lors de la suppression : {str(e)}",
+                message_type="error"
+            )
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False) 
+    app.run(host="0.0.0.0", port=5000, debug=True) 
