@@ -1,11 +1,16 @@
-version: '3.8'
+version: '3'
 
 services:
   metronome:
     build: .
-    volumes:
-      - ./src:/app/src
     ports:
       - "5000:5000"
+    volumes:
+      - ./src:/app/src
+      - metronome_data:/app/data
     environment:
-      - DISPLAY=${DISPLAY}
+      - FLASK_APP=src/flask_metronome.py
+      - FLASK_ENV=development
+
+volumes:
+  metronome_data:

@@ -9,7 +9,9 @@ from src.database.models import db, Song, GuitarGoal
 from src.routes.song_routes import song_bp, init_db
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///metronome.db'
+# Utiliser un chemin dans le volume Docker pour la base de données
+db_path = os.path.join('/app/data', 'metronome.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialiser la base de données
@@ -19,11 +21,14 @@ db.init_app(app)
 app.register_blueprint(song_bp)
 
 # Créer les tables de la base de données et initialiser avec des données
-# seulement si la base n'existe pas
+# seulement si la base n'existe pas ou est vide
 with app.app_context():
-    if not os.path.exists('metronome.db'):
-        db.create_all()
-        init_db()  # Ajouter les chansons initiales seulement si la base est vide
+    # Créer les tables si elles n'existent pas
+    db.create_all()
+    
+    # Initialiser avec des données seulement si la base est vide
+    if Song.query.count() == 0:
+        init_db()
 
 HTML = """
 <!DOCTYPE html>
@@ -239,9 +244,27 @@ HTML = """
         <select id="song-select">
             <option value="">Sélectionner une chanson...</option>
             {% for song in songs %}
-            <option value="{{ song.bpm }}">{{ song.title }} ({{ song.bpm }} BPM)</option>
+            <option value="{{ song.bpm }}" 
+                    data-song-id="{{ song.id }}"
+                    data-min-speed="{{ song.min_speed }}"
+                    data-max-speed="{{ song.max_speed }}"
+                    data-challenge-speed="{{ song.challenge_speed }}">
+                {{ song.title }} ({{ song.bpm }} BPM)
+            </option>
             {% endfor %}
         </select>
+    </div>
+
+    <!-- Informations de la chanson sélectionnée -->
+    <div id="song-info" style="display: none; margin: 20px auto; max-width: 400px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+        <div style="margin-bottom: 10px;">
+            <strong>Song BPM:</strong> <span id="selected-bpm"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; gap: 10px;">
+            <div><strong>Min Speed:</strong> <span id="min-speed"></span></div>
+            <div><strong>Max Speed:</strong> <span id="max-speed"></span></div>
+            <div><strong>Challenge Speed:</strong> <span id="challenge-speed"></span></div>
+        </div>
     </div>
 
     <div class="bpm-multi-container">
@@ -560,6 +583,34 @@ HTML = """
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
+
+        // Ajouter la gestion de l'affichage des informations de la chanson
+        document.getElementById('song-select').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const songInfo = document.getElementById('song-info');
+            
+            if (this.value) {
+                // Mettre à jour l'affichage des informations
+                document.getElementById('selected-bpm').textContent = this.value;
+                document.getElementById('min-speed').textContent = selectedOption.dataset.minSpeed;
+                document.getElementById('max-speed').textContent = selectedOption.dataset.maxSpeed;
+                document.getElementById('challenge-speed').textContent = selectedOption.dataset.challengeSpeed;
+                songInfo.style.display = 'block';
+
+                // Mettre à jour les valeurs des sliders
+                bpmInputs[0].value = selectedOption.dataset.minSpeed;
+                bpmInputs[1].value = selectedOption.dataset.maxSpeed;
+                bpmInputs[2].value = selectedOption.dataset.challengeSpeed;
+
+                // Mettre à jour l'affichage des sliders
+                createSliders();
+                createIntermediateDots1();
+                createIntermediateDots2();
+                createFinalDots();
+            } else {
+                songInfo.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
@@ -733,6 +784,18 @@ MANAGE_SONGS_HTML = """
                 <label for="bpm">BPM :</label>
                 <input type="number" id="bpm" name="bpm" min="40" max="208" required>
             </div>
+            <div class="form-group">
+                <label for="min_speed">Vitesse minimale (BPM) :</label>
+                <input type="number" id="min_speed" name="min_speed" min="40" max="208" value="60">
+            </div>
+            <div class="form-group">
+                <label for="max_speed">Vitesse maximale (BPM) :</label>
+                <input type="number" id="max_speed" name="max_speed" min="40" max="208" value="120">
+            </div>
+            <div class="form-group">
+                <label for="challenge_speed">Vitesse de défi (BPM) :</label>
+                <input type="number" id="challenge_speed" name="challenge_speed" min="40" max="208" value="140">
+            </div>
             <button type="submit" class="submit-btn">Ajouter la chanson</button>
         </form>
         
@@ -743,6 +806,10 @@ MANAGE_SONGS_HTML = """
                 <div class="song-info">
                     <span class="song-title">{{ song.title }}</span>
                     <span class="song-bpm">{{ song.bpm }} BPM</span>
+                    <div class="song-speeds">
+                        <span class="speed-label">Vitesses :</span>
+                        <span class="speed-value">Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }}</span>
+                    </div>
                 </div>
                 <button class="delete-btn" onclick="confirmDelete('{{ song.id }}', '{{ song.title }}')">Supprimer</button>
             </div>
@@ -1123,9 +1190,16 @@ def manage_songs():
         if request.method == 'POST':
             title = request.form.get('title')
             bpm = request.form.get('bpm')
+            min_speed = request.form.get('min_speed', 60)
+            max_speed = request.form.get('max_speed', 120)
+            challenge_speed = request.form.get('challenge_speed', 140)
             
             try:
                 bpm = int(bpm)
+                min_speed = int(min_speed)
+                max_speed = int(max_speed)
+                challenge_speed = int(challenge_speed)
+                
                 if not (40 <= bpm <= 208):
                     return render_template_string(
                         MANAGE_SONGS_HTML,
@@ -1134,7 +1208,14 @@ def manage_songs():
                         message_type="error"
                     )
                 
-                new_song = Song(title=title, bpm=bpm, beats_per_measure=4)
+                new_song = Song(
+                    title=title,
+                    bpm=bpm,
+                    beats_per_measure=4,
+                    min_speed=min_speed,
+                    max_speed=max_speed,
+                    challenge_speed=challenge_speed
+                )
                 db.session.add(new_song)
                 db.session.commit()
                 
@@ -1148,7 +1229,7 @@ def manage_songs():
                 return render_template_string(
                     MANAGE_SONGS_HTML,
                     songs=Song.query.all(),
-                    message="Le BPM doit être un nombre valide",
+                    message="Les vitesses doivent être des nombres valides",
                     message_type="error"
                 )
             except Exception as e:
