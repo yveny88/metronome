@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, jsonify
+from flask import Flask, render_template_string, request, jsonify, redirect, url_for
 import os
 import sys
 
@@ -19,9 +19,11 @@ db.init_app(app)
 app.register_blueprint(song_bp)
 
 # Créer les tables de la base de données et initialiser avec des données
+# seulement si la base n'existe pas
 with app.app_context():
-    db.create_all()
-    init_db()  # Ajouter les chansons initiales si la base est vide
+    if not os.path.exists('metronome.db'):
+        db.create_all()
+        init_db()  # Ajouter les chansons initiales seulement si la base est vide
 
 HTML = """
 <!DOCTYPE html>
@@ -188,12 +190,29 @@ HTML = """
             outline: none;
             border-color: #3498db;
         }
+        .manage-songs-btn {
+            display: inline-block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .manage-songs-btn:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
     <h1>🕒 Métronome Web Flask</h1>
     
-    <!-- Nouveau menu déroulant des chansons -->
+    <!-- Bouton de gestion des chansons -->
+    <a href="/manage-songs" class="manage-songs-btn">Gérer les chansons</a>
+    
+    <!-- Menu déroulant des chansons -->
     <div class="song-selector">
         <select id="song-select">
             <option value="">Sélectionner une chanson...</option>
@@ -524,11 +543,295 @@ HTML = """
 </html>
 """
 
+# Template pour la page de gestion des chansons
+MANAGE_SONGS_HTML = """
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Gestion des Chansons - Métronome</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1, h2 { 
+            color: #2c3e50;
+            text-align: center;
+        }
+        .song-list {
+            margin: 20px 0;
+        }
+        .song-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .song-info {
+            flex-grow: 1;
+        }
+        .song-title {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .song-bpm {
+            color: #7f8c8d;
+            margin-left: 10px;
+        }
+        .back-btn, .submit-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: none;
+            cursor: pointer;
+        }
+        .back-btn:hover, .submit-btn:hover {
+            background-color: #2980b9;
+        }
+        .add-song-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .confirm-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .confirm-dialog-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .confirm-dialog-buttons {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .confirm-dialog-buttons button {
+            margin-left: 10px;
+        }
+        .cancel-btn {
+            background-color: #95a5a6;
+        }
+        .cancel-btn:hover {
+            background-color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestion des Chansons</h1>
+        <a href="/" class="back-btn">Retour au Métronome</a>
+        
+        {% if message %}
+        <div class="message {{ message_type }}">
+            {{ message }}
+        </div>
+        {% endif %}
+
+        <h2>Ajouter une nouvelle chanson</h2>
+        <form action="/manage-songs" method="POST" class="add-song-form">
+            <div class="form-group">
+                <label for="title">Titre de la chanson :</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="bpm">BPM :</label>
+                <input type="number" id="bpm" name="bpm" min="40" max="208" required>
+            </div>
+            <button type="submit" class="submit-btn">Ajouter la chanson</button>
+        </form>
+        
+        <h2>Liste des chansons</h2>
+        <div class="song-list">
+            {% for song in songs %}
+            <div class="song-item">
+                <div class="song-info">
+                    <span class="song-title">{{ song.title }}</span>
+                    <span class="song-bpm">{{ song.bpm }} BPM</span>
+                </div>
+                <button class="delete-btn" onclick="confirmDelete('{{ song.id }}', '{{ song.title }}')">Supprimer</button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Dialog de confirmation -->
+    <div class="confirm-dialog-backdrop" id="confirmDialogBackdrop"></div>
+    <div class="confirm-dialog" id="confirmDialog">
+        <h3>Confirmer la suppression</h3>
+        <p>Êtes-vous sûr de vouloir supprimer la chanson "<span id="songTitle"></span>" ?</p>
+        <div class="confirm-dialog-buttons">
+            <button class="back-btn cancel-btn" onclick="hideConfirmDialog()">Annuler</button>
+            <button class="delete-btn" id="confirmDeleteBtn">Supprimer</button>
+        </div>
+    </div>
+
+    <script>
+        function confirmDelete(songId, songTitle) {
+            document.getElementById('songTitle').textContent = songTitle;
+            document.getElementById('confirmDialog').style.display = 'block';
+            document.getElementById('confirmDialogBackdrop').style.display = 'block';
+            
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                window.location.href = `/delete-song/${songId}`;
+            };
+        }
+
+        function hideConfirmDialog() {
+            document.getElementById('confirmDialog').style.display = 'none';
+            document.getElementById('confirmDialogBackdrop').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+"""
+
 @app.route("/")
 def index():
     with app.app_context():
         songs = Song.query.all()
     return render_template_string(HTML, songs=songs)
+
+@app.route("/manage-songs", methods=['GET', 'POST'])
+def manage_songs():
+    with app.app_context():
+        if request.method == 'POST':
+            title = request.form.get('title')
+            bpm = request.form.get('bpm')
+            
+            try:
+                bpm = int(bpm)
+                if not (40 <= bpm <= 208):
+                    return render_template_string(
+                        MANAGE_SONGS_HTML,
+                        songs=Song.query.all(),
+                        message="Le BPM doit être entre 40 et 208",
+                        message_type="error"
+                    )
+                
+                new_song = Song(title=title, bpm=bpm, beats_per_measure=4)
+                db.session.add(new_song)
+                db.session.commit()
+                
+                return render_template_string(
+                    MANAGE_SONGS_HTML,
+                    songs=Song.query.all(),
+                    message=f"La chanson '{title}' a été ajoutée avec succès !",
+                    message_type="success"
+                )
+            except ValueError:
+                return render_template_string(
+                    MANAGE_SONGS_HTML,
+                    songs=Song.query.all(),
+                    message="Le BPM doit être un nombre valide",
+                    message_type="error"
+                )
+            except Exception as e:
+                db.session.rollback()
+                return render_template_string(
+                    MANAGE_SONGS_HTML,
+                    songs=Song.query.all(),
+                    message=f"Erreur lors de l'ajout de la chanson : {str(e)}",
+                    message_type="error"
+                )
+        
+        return render_template_string(MANAGE_SONGS_HTML, songs=Song.query.all())
+
+@app.route("/delete-song/<int:song_id>")
+def delete_song(song_id):
+    with app.app_context():
+        try:
+            song = Song.query.get_or_404(song_id)
+            title = song.title
+            db.session.delete(song)
+            db.session.commit()
+            return render_template_string(
+                MANAGE_SONGS_HTML,
+                songs=Song.query.all(),
+                message=f"La chanson '{title}' a été supprimée avec succès !",
+                message_type="success"
+            )
+        except Exception as e:
+            db.session.rollback()
+            return render_template_string(
+                MANAGE_SONGS_HTML,
+                songs=Song.query.all(),
+                message=f"Erreur lors de la suppression de la chanson : {str(e)}",
+                message_type="error"
+            )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False) 
