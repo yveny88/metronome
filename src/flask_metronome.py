@@ -1,6 +1,27 @@
 from flask import Flask, render_template_string, request, jsonify
+import os
+import sys
+
+# Ajouter le répertoire src au path Python
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.database.models import db
+from src.routes.song_routes import song_bp, init_db
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///metronome.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialiser la base de données
+db.init_app(app)
+
+# Enregistrer les blueprints
+app.register_blueprint(song_bp)
+
+# Créer les tables de la base de données et initialiser avec des données
+with app.app_context():
+    db.create_all()
+    init_db()  # Ajouter les chansons initiales si la base est vide
 
 HTML = """
 <!DOCTYPE html>
@@ -157,7 +178,6 @@ HTML = """
             <input class="bpm-input" id="bpm-input-1" type="number" min="40" max="208" value="100" step="5" />
             <div class="bpm-scale" id="bpm-scale-1"></div>
             <div id="slider-dot-1"></div>
-            <input type="range" min="40" max="208" value="100" class="bpm-slider" id="bpm-slider-1" />
         </div>
         <div class="bpm-col" id="col2">
             <div id="intermediate-dots-1"></div>
@@ -166,7 +186,6 @@ HTML = """
             <input class="bpm-input" id="bpm-input-2" type="number" min="40" max="208" value="120" step="5" />
             <div class="bpm-scale" id="bpm-scale-2"></div>
             <div id="slider-dot-2"></div>
-            <input type="range" min="40" max="208" value="120" class="bpm-slider" id="bpm-slider-2" />
         </div>
         <div class="bpm-col" id="col4">
             <div id="intermediate-dots-2"></div>
@@ -175,7 +194,6 @@ HTML = """
             <input class="bpm-input" id="bpm-input-3" type="number" min="40" max="208" value="140" step="5" />
             <div class="bpm-scale" id="bpm-scale-3"></div>
             <div id="slider-dot-3"></div>
-            <input type="range" min="40" max="208" value="140" class="bpm-slider" id="bpm-slider-3" />
             <div style="position: relative; width: 100%; height: 400px;">
                 <div id="final-dots" class="final-dots-row"></div>
             </div>
@@ -228,11 +246,6 @@ HTML = """
             document.getElementById('bpm-input-2'),
             document.getElementById('bpm-input-3')
         ];
-        const bpmSliders = [
-            document.getElementById('bpm-slider-1'),
-            document.getElementById('bpm-slider-2'),
-            document.getElementById('bpm-slider-3')
-        ];
         const sliderDotDivs = [
             document.getElementById('slider-dot-1'),
             document.getElementById('slider-dot-2'),
@@ -259,8 +272,8 @@ HTML = """
                 dot.className = 'slider-dot';
                 dot.style.top = `${bpmToY(bpm)}px`;
                 dot.innerHTML = `
-                    <div class=\"slider-circle\"></div>
-                    <span class=\"slider-bpm-label\">${bpm}</span>
+                    <div class="slider-circle"></div>
+                    <span class="slider-bpm-label">${bpm}</span>
                 `;
                 sliderDotDivs[i].appendChild(dot);
                 sliderDots.push(dot);
@@ -281,8 +294,8 @@ HTML = """
                 dot.className = 'intermediate-dot';
                 dot.style.top = `${y}px`;
                 dot.innerHTML = `
-                    <div class=\"dot-circle\"></div>
-                    <span class=\"dot-bpm-label\">${bpm}</span>
+                    <div class="dot-circle"></div>
+                    <span class="dot-bpm-label">${bpm}</span>
                 `;
                 intermediateDots1Div.appendChild(dot);
                 intermediateDots1.push(dot);
@@ -303,8 +316,8 @@ HTML = """
                 dot.className = 'intermediate-dot';
                 dot.style.top = `${y}px`;
                 dot.innerHTML = `
-                    <div class=\"dot-circle\"></div>
-                    <span class=\"dot-bpm-label\">${bpm}</span>
+                    <div class="dot-circle"></div>
+                    <span class="dot-bpm-label">${bpm}</span>
                 `;
                 intermediateDots2Div.appendChild(dot);
                 intermediateDots2.push(dot);
@@ -334,17 +347,9 @@ HTML = """
         createFinalDots();
 
         for (let i = 0; i < 3; i++) {
-            bpmSliders[i].oninput = function() {
-                bpmInputs[i].value = this.value;
-                createSliders();
-                createIntermediateDots1();
-                createIntermediateDots2();
-                createFinalDots();
-            };
             bpmInputs[i].oninput = function() {
                 let val = Math.max(BPM_MIN, Math.min(BPM_MAX, parseInt(this.value) || BPM_MIN));
                 this.value = val;
-                bpmSliders[i].value = val;
                 createSliders();
                 createIntermediateDots1();
                 createIntermediateDots2();
