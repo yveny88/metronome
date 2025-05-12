@@ -303,6 +303,7 @@ HTML = """
     <div class="controls">
         <button id="start-stop">Start</button>
         <button id="stop-btn" disabled>Arrêter</button>
+        <button id="update-speeds" style="margin-left: 20px; background-color: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Mettre à jour les vitesses</button>
     </div>
     <div id="dot" class="dot">●</div>
     <audio id="click" src="/static/metronome-85688.mp3"></audio>
@@ -611,6 +612,64 @@ HTML = """
                 songInfo.style.display = 'none';
             }
         });
+
+        // Ajouter la gestion du bouton de mise à jour des vitesses
+        document.getElementById('update-speeds').addEventListener('click', async function() {
+            const songSelect = document.getElementById('song-select');
+            const selectedOption = songSelect.options[songSelect.selectedIndex];
+            
+            if (!selectedOption.value) {
+                alert("Veuillez sélectionner une chanson d'abord");
+                return;
+            }
+
+            const songId = selectedOption.dataset.songId;
+            const minSpeed = bpmInputs[0].value;
+            const maxSpeed = bpmInputs[1].value;
+            const challengeSpeed = bpmInputs[2].value;
+
+            try {
+                const response = await fetch(`/update-song-speeds/${songId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        min_speed: minSpeed,
+                        max_speed: maxSpeed,
+                        challenge_speed: challengeSpeed
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Les vitesses ont été mises à jour avec succès !');
+                    // Mettre à jour les data-attributes de l'option
+                    selectedOption.dataset.minSpeed = minSpeed;
+                    selectedOption.dataset.maxSpeed = maxSpeed;
+                    selectedOption.dataset.challengeSpeed = challengeSpeed;
+                } else {
+                    alert('Erreur lors de la mise à jour des vitesses');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la mise à jour des vitesses');
+            }
+        });
+
+        function confirmDelete(songId, songTitle) {
+            document.getElementById('songTitle').textContent = songTitle;
+            document.getElementById('confirmDialog').style.display = 'block';
+            document.getElementById('confirmDialogBackdrop').style.display = 'block';
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                window.location.href = `/delete-song/${songId}`;
+            };
+        }
+
+        function hideConfirmDialog() {
+            document.getElementById('confirmDialog').style.display = 'none';
+            document.getElementById('confirmDialogBackdrop').style.display = 'none';
+        }
+
     </script>
 </body>
 </html>
@@ -811,7 +870,7 @@ MANAGE_SONGS_HTML = """
                         <span class="speed-value">Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }}</span>
                     </div>
                 </div>
-                <button class="delete-btn" onclick="confirmDelete('{{ song.id }}', '{{ song.title }}')">Supprimer</button>
+                <button class="delete-btn" onclick='confirmDelete({{ song.id }}, {{ song.title|trim|tojson }})'>Supprimer</button>
             </div>
             {% endfor %}
         </div>
@@ -833,7 +892,6 @@ MANAGE_SONGS_HTML = """
             document.getElementById('songTitle').textContent = songTitle;
             document.getElementById('confirmDialog').style.display = 'block';
             document.getElementById('confirmDialogBackdrop').style.display = 'block';
-            
             document.getElementById('confirmDeleteBtn').onclick = function() {
                 window.location.href = `/delete-song/${songId}`;
             };
@@ -1344,6 +1402,23 @@ def delete_goal(goal_id):
                 message=f"Erreur lors de la suppression : {str(e)}",
                 message_type="error"
             )
+
+@app.route("/update-song-speeds/<int:song_id>", methods=['POST'])
+def update_song_speeds(song_id):
+    with app.app_context():
+        try:
+            song = Song.query.get_or_404(song_id)
+            data = request.get_json()
+            
+            song.min_speed = int(data['min_speed'])
+            song.max_speed = int(data['max_speed'])
+            song.challenge_speed = int(data['challenge_speed'])
+            
+            db.session.commit()
+            return jsonify({"message": "Vitesses mises à jour avec succès"}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True) 
