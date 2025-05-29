@@ -1284,7 +1284,7 @@ EDIT_GOAL_HTML = """
 @app.route("/")
 def index():
     with app.app_context():
-        songs = Song.query.all()
+        songs = Song.query.filter_by(prioritaire=1).all()
     return render_template_string(HTML, songs=songs)
 
 @app.route("/manage-songs", methods=['GET', 'POST'])
