@@ -33,13 +33,16 @@ class GuitarGoal(db.Model):
     target_bpm = db.Column(db.Integer)  # BPM cible si applicable
 
 class SongsterrLink(db.Model):
+    __tablename__ = 'songsterr_links'
     id = db.Column(db.Integer, primary_key=True)
     song_name = db.Column(db.String(100), nullable=False)
     songsterr_link = db.Column(db.String(200), nullable=False)
+    display_order = db.Column(db.Integer, default=0)  # Renommé de 'order' à 'display_order'
 
     def to_dict(self):
         return {
-            "id": self.id,
-            "song_name": self.song_name,
-            "songsterr_link": self.songsterr_link
+            'id': self.id,
+            'song_name': self.song_name,
+            'songsterr_link': self.songsterr_link,
+            'display_order': self.display_order
         } 

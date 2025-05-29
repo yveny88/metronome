@@ -1065,7 +1065,7 @@ GUITAR_GOALS_HTML = """
             border-radius: 3px;
             cursor: pointer;
             font-size: 14px;
-            margin-left: 10px;
+            transition: background-color 0.3s;
         }
         .delete-btn:hover {
             background-color: #c0392b;
@@ -1303,10 +1303,45 @@ SONGSTERR_LINKS_HTML = """
         .success { background-color: #d4edda; color: #155724; }
         .error { background-color: #f8d7da; color: #721c24; }
         .link-list { margin: 20px 0; }
-        .link-item { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .link-item { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            cursor: move;
+            transition: background-color 0.3s;
+        }
+        .link-item:hover {
+            background: #e9ecef;
+        }
+        .link-item.dragging {
+            opacity: 0.5;
+            background: #e9ecef;
+        }
         .link-info { flex-grow: 1; }
-        .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 14px; transition: background-color 0.3s; }
+        .delete-btn { 
+            background-color: #e74c3c; 
+            color: white; 
+            border: none; 
+            padding: 5px 10px; 
+            border-radius: 3px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            transition: background-color 0.3s;
+            margin-left: 10px;
+        }
         .delete-btn:hover { background-color: #c0392b; }
+        .drag-handle {
+            cursor: move;
+            padding: 0 10px;
+            color: #95a5a6;
+        }
+        .drag-handle:hover {
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
@@ -1329,9 +1364,10 @@ SONGSTERR_LINKS_HTML = """
             <button type="submit" class="submit-btn">Ajouter le lien</button>
         </form>
         <h2>Liste des liens</h2>
-        <div class="link-list">
+        <div class="link-list" id="sortable-list">
             {% for link in links %}
-            <div class="link-item">
+            <div class="link-item" draggable="true" data-id="{{ link.id }}">
+                <div class="drag-handle">⋮⋮</div>
                 <div class="link-info">
                     <span class="song-title">{{ link.song_name }}</span> :
                     <a href="{{ link.songsterr_link }}" target="_blank">{{ link.songsterr_link }}</a>
@@ -1343,6 +1379,69 @@ SONGSTERR_LINKS_HTML = """
             {% endfor %}
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const list = document.getElementById('sortable-list');
+            let draggedItem = null;
+
+            // Gestionnaire d'événements pour le début du drag
+            list.addEventListener('dragstart', function(e) {
+                draggedItem = e.target;
+                e.target.classList.add('dragging');
+            });
+
+            // Gestionnaire d'événements pour la fin du drag
+            list.addEventListener('dragend', function(e) {
+                e.target.classList.remove('dragging');
+                draggedItem = null;
+            });
+
+            // Gestionnaire d'événements pendant le drag
+            list.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const currentDragged = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    list.appendChild(currentDragged);
+                } else {
+                    list.insertBefore(currentDragged, afterElement);
+                }
+            });
+
+            // Gestionnaire d'événements pour la fin du drop
+            list.addEventListener('drop', function(e) {
+                e.preventDefault();
+                const items = [...list.querySelectorAll('.link-item')];
+                const newOrder = items.map(item => item.dataset.id);
+                
+                // Envoyer le nouvel ordre au serveur
+                fetch('/update-songsterr-links-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ order: newOrder })
+                });
+            });
+
+            // Fonction pour déterminer la position après le drag
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.link-item:not(.dragging)')];
+
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+        });
+    </script>
 </body>
 </html>
 """
@@ -1553,9 +1652,12 @@ def manage_songsterr_links():
             song_name = request.form.get('song_name')
             songsterr_link = request.form.get('songsterr_link')
             try:
+                # Obtenir le dernier ordre
+                last_order = db.session.query(db.func.max(SongsterrLink.display_order)).scalar() or 0
                 new_link = SongsterrLink(
                     song_name=song_name,
-                    songsterr_link=songsterr_link
+                    songsterr_link=songsterr_link,
+                    display_order=last_order + 1
                 )
                 db.session.add(new_link)
                 db.session.commit()
@@ -1566,7 +1668,8 @@ def manage_songsterr_links():
                 message = f"Erreur lors de l'ajout : {str(e)}"
                 message_type = "error"
         
-        links = SongsterrLink.query.all()
+        # Trier les liens par ordre
+        links = SongsterrLink.query.order_by(SongsterrLink.display_order).all()
         return render_template_string(SONGSTERR_LINKS_HTML, links=links, message=message, message_type=message_type)
 
 @app.route("/delete-songsterr-link/<song_name>", methods=['POST'])
@@ -1587,6 +1690,25 @@ def delete_songsterr_link(song_name):
         
         links = SongsterrLink.query.all()
         return render_template_string(SONGSTERR_LINKS_HTML, links=links, message=message, message_type=message_type)
+
+@app.route("/update-songsterr-links-order", methods=['POST'])
+def update_songsterr_links_order():
+    with app.app_context():
+        try:
+            data = request.get_json()
+            new_order = data.get('order', [])
+            
+            # Mettre à jour l'ordre des liens
+            for index, link_id in enumerate(new_order):
+                link = SongsterrLink.query.get(link_id)
+                if link:
+                    link.display_order = index
+            
+            db.session.commit()
+            return jsonify({"message": "Ordre mis à jour avec succès"}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True) 
