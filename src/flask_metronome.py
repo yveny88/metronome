@@ -1303,44 +1303,57 @@ SONGSTERR_LINKS_HTML = """
         .success { background-color: #d4edda; color: #155724; }
         .error { background-color: #f8d7da; color: #721c24; }
         .link-list { margin: 20px 0; }
-        .link-item { 
-            background: #f8f9fa; 
-            padding: 15px; 
-            margin: 10px 0; 
-            border-radius: 5px; 
-            display: flex; 
-            justify-content: space-between; 
+        .link-item {
+            display: flex;
             align-items: center;
-            cursor: move;
-            transition: background-color 0.3s;
+            background: #f8f9fa;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px #0001;
+            padding: 12px 18px;
+            transition: background 0.2s, box-shadow 0.2s;
         }
         .link-item:hover {
-            background: #e9ecef;
+            background: #e3f0ff;
+            box-shadow: 0 4px 12px #0002;
         }
-        .link-item.dragging {
-            opacity: 0.5;
-            background: #e9ecef;
-        }
-        .link-info { flex-grow: 1; }
-        .delete-btn { 
-            background-color: #e74c3c; 
-            color: white; 
-            border: none; 
-            padding: 5px 10px; 
-            border-radius: 3px; 
-            cursor: pointer; 
-            font-size: 14px; 
-            transition: background-color 0.3s;
-            margin-left: 10px;
-        }
-        .delete-btn:hover { background-color: #c0392b; }
         .drag-handle {
-            cursor: move;
-            padding: 0 10px;
-            color: #95a5a6;
+            font-size: 22px;
+            margin-right: 18px;
+            color: #b0b0b0;
+            cursor: grab;
+            user-select: none;
         }
-        .drag-handle:hover {
-            color: #7f8c8d;
+        .link-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .song-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 17px;
+        }
+        .song-link {
+            color: #1976d2;
+            text-decoration: underline;
+            font-size: 15px;
+            word-break: break-all;
+        }
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 5px;
+            font-size: 15px;
+            margin-left: 18px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .delete-btn:hover {
+            background: #c0392b;
         }
     </style>
 </head>
@@ -1367,10 +1380,13 @@ SONGSTERR_LINKS_HTML = """
         <div class="link-list" id="sortable-list">
             {% for link in links %}
             <div class="link-item" draggable="true" data-id="{{ link.id }}">
-                <div class="drag-handle">⋮⋮</div>
+                <span class="drag-handle" title="Déplacer">☰</span>
                 <div class="link-info">
-                    <span class="song-title">{{ link.song_name }}</span> :
-                    <a href="{{ link.songsterr_link }}" target="_blank">{{ link.songsterr_link }}</a>
+                    <div class="song-title">{{ link.song_name }}</div>
+                    <a class="song-link" href="{{ link.songsterr_link }}" target="_blank">
+                        {{ link.songsterr_link }}
+                        <span style="font-size: 14px;">🔗</span>
+                    </a>
                 </div>
                 <form action="/delete-songsterr-link/{{ link.song_name }}" method="POST" style="margin:0;">
                     <button class="delete-btn" type="submit">Supprimer</button>
