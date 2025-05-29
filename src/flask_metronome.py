@@ -228,6 +228,13 @@ HTML = """
         .nav-btn:hover {
             background-color: #2980b9;
         }
+        .current-bpm {
+            font-size: 48px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -269,7 +276,7 @@ HTML = """
 
     <div class="bpm-multi-container">
         <div class="bpm-col" id="col1">
-            <input class="bpm-input" id="bpm-input-1" type="number" min="40" max="208" value="100" step="5" />
+            <input class="bpm-input" id="bpm-input-1" type="number" min="40" max="240" value="100" step="5" />
             <div class="bpm-scale" id="bpm-scale-1"></div>
             <div id="slider-dot-1"></div>
         </div>
@@ -277,7 +284,7 @@ HTML = """
             <div id="intermediate-dots-1"></div>
         </div>
         <div class="bpm-col" id="col3">
-            <input class="bpm-input" id="bpm-input-2" type="number" min="40" max="208" value="120" step="5" />
+            <input class="bpm-input" id="bpm-input-2" type="number" min="40" max="240" value="120" step="5" />
             <div class="bpm-scale" id="bpm-scale-2"></div>
             <div id="slider-dot-2"></div>
         </div>
@@ -285,7 +292,7 @@ HTML = """
             <div id="intermediate-dots-2"></div>
         </div>
         <div class="bpm-col" id="col5">
-            <input class="bpm-input" id="bpm-input-3" type="number" min="40" max="208" value="140" step="5" />
+            <input class="bpm-input" id="bpm-input-3" type="number" min="40" max="240" value="140" step="5" />
             <div class="bpm-scale" id="bpm-scale-3"></div>
             <div id="slider-dot-3"></div>
             <div style="position: relative; width: 100%; height: 400px;">
@@ -306,10 +313,11 @@ HTML = """
         <button id="update-speeds" style="margin-left: 20px; background-color: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Mettre à jour les vitesses</button>
     </div>
     <div id="dot" class="dot">●</div>
+    <div id="current-bpm" class="current-bpm">100 BPM</div>
     <audio id="click" src="/static/metronome-85688.mp3"></audio>
     <script>
         const BPM_MIN = 40;
-        const BPM_MAX = 208;
+        const BPM_MAX = 240;
         const SCALE_HEIGHT = 400;
         const NUM_POINTS_1 = 10;
         const NUM_POINTS_2 = 5;
@@ -567,6 +575,8 @@ HTML = """
 
         async function playMeasures(bpm, beatsPerMeasure, numMeasures) {
             const delay = 60000 / bpm;
+            // Mettre à jour l'affichage du BPM actuel
+            document.getElementById('current-bpm').textContent = `${bpm} BPM`;
             for (let m = 0; m < numMeasures; m++) {
                 if (shouldStop) return;
                 for (let b = 0; b < beatsPerMeasure; b++) {
@@ -841,19 +851,19 @@ MANAGE_SONGS_HTML = """
             </div>
             <div class="form-group">
                 <label for="bpm">BPM :</label>
-                <input type="number" id="bpm" name="bpm" min="40" max="208" required>
+                <input type="number" id="bpm" name="bpm" min="40" max="240" required>
             </div>
             <div class="form-group">
                 <label for="min_speed">Vitesse minimale (BPM) :</label>
-                <input type="number" id="min_speed" name="min_speed" min="40" max="208" value="60">
+                <input type="number" id="min_speed" name="min_speed" min="40" max="240" value="60">
             </div>
             <div class="form-group">
                 <label for="max_speed">Vitesse maximale (BPM) :</label>
-                <input type="number" id="max_speed" name="max_speed" min="40" max="208" value="120">
+                <input type="number" id="max_speed" name="max_speed" min="40" max="240" value="120">
             </div>
             <div class="form-group">
                 <label for="challenge_speed">Vitesse de défi (BPM) :</label>
-                <input type="number" id="challenge_speed" name="challenge_speed" min="40" max="208" value="140">
+                <input type="number" id="challenge_speed" name="challenge_speed" min="40" max="240" value="140">
             </div>
             <button type="submit" class="submit-btn">Ajouter la chanson</button>
         </form>
@@ -1073,7 +1083,7 @@ GUITAR_GOALS_HTML = """
             </div>
             <div class="form-group">
                 <label for="target_bpm">BPM cible (optionnel) :</label>
-                <input type="number" id="target_bpm" name="target_bpm" min="40" max="208">
+                <input type="number" id="target_bpm" name="target_bpm" min="40" max="240">
             </div>
             <div class="form-group">
                 <label for="progress">Progression (0-100) :</label>
@@ -1223,7 +1233,7 @@ EDIT_GOAL_HTML = """
             </div>
             <div class="form-group">
                 <label for="target_bpm">BPM cible (optionnel) :</label>
-                <input type="number" id="target_bpm" name="target_bpm" min="40" max="208" value="{{ goal.target_bpm or '' }}">
+                <input type="number" id="target_bpm" name="target_bpm" min="40" max="240" value="{{ goal.target_bpm or '' }}">
             </div>
             <div class="form-group">
                 <label for="progress">Progression (0-100) :</label>
@@ -1258,11 +1268,11 @@ def manage_songs():
                 max_speed = int(max_speed)
                 challenge_speed = int(challenge_speed)
                 
-                if not (40 <= bpm <= 208):
+                if not (40 <= bpm <= 240):
                     return render_template_string(
                         MANAGE_SONGS_HTML,
                         songs=Song.query.all(),
-                        message="Le BPM doit être entre 40 et 208",
+                        message="Le BPM doit être entre 40 et 240",
                         message_type="error"
                     )
                 
