@@ -235,6 +235,115 @@ HTML = """
             margin-top: 20px;
             text-align: center;
         }
+        .columns {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+        }
+        .song-column {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 18px 12px;
+            min-width: 320px;
+            box-shadow: 0 2px 8px #0001;
+        }
+        .column-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 18px;
+            text-align: center;
+            color: #1976d2;
+        }
+        .song-list {
+            min-height: 60px;
+        }
+        .song-item {
+            background: #fff;
+            padding: 14px 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px #0001;
+            cursor: move;
+        }
+        .song-item.dragging {
+            opacity: 0.5;
+            background: #e3f0ff;
+        }
+        .song-info { flex: 1; display: flex; flex-direction: column; }
+        .song-title { font-weight: bold; color: #2c3e50; font-size: 16px; }
+        .song-bpm { color: #7f8c8d; margin-left: 8px; font-size: 14px; }
+        .song-speeds { color: #444; font-size: 13px; }
+        .apply-btn {
+            display: block;
+            margin: 0 auto 24px auto;
+            padding: 12px 32px;
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .apply-btn:hover {
+            background: #1256a3;
+        }
+        /* --- Formulaire joli --- */
+        .add-song-form {
+            background: #f8f9fa;
+            padding: 28px 32px 22px 32px;
+            border-radius: 10px;
+            margin: 30px auto 30px auto;
+            max-width: 420px;
+            box-shadow: 0 2px 12px #0001;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .add-song-form h2 {
+            font-size: 1.4em;
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .form-group input {
+            padding: 10px 12px;
+            border: 1px solid #cfd8dc;
+            border-radius: 6px;
+            font-size: 16px;
+            background: #fff;
+            transition: border 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #1976d2;
+            background: #e3f0ff;
+        }
+        .submit-btn {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 0;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .submit-btn:hover {
+            background: #1256a3;
+        }
     </style>
 </head>
 <body>
@@ -317,6 +426,7 @@ HTML = """
     <div id="current-bpm" class="current-bpm">100 BPM</div>
     <audio id="click" src="/static/metronome-85688.mp3"></audio>
     <script>
+        console.log('JS chargé sur /manage-songs');
         const BPM_MIN = 40;
         const BPM_MAX = 240;
         const SCALE_HEIGHT = 400;
@@ -693,9 +803,29 @@ HTML = """
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ prioritaire })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Réponse serveur:', data);
+                        if (data.message) {
+                            alert('Succès : ' + data.message);
+                        } else if (data.error) {
+                            alert('Erreur : ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        alert('Erreur réseau : ' + error);
                     });
                 });
             });
+        });
+
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.classList.contains('song-item')) {
+                console.log('Drag start sur', e.target);
+                draggedItem = e.target;
+                e.target.classList.add('dragging');
+            }
         });
 
     </script>
@@ -711,142 +841,114 @@ MANAGE_SONGS_HTML = """
     <meta charset='UTF-8'>
     <title>Gestion des Chansons - Métronome</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 20px;
-            padding: 20px;
+        .columns {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+        .song-column {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 18px 12px;
+            min-width: 320px;
+            box-shadow: 0 2px 8px #0001;
         }
-        h1, h2 { 
-            color: #2c3e50;
+        .column-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 18px;
             text-align: center;
+            color: #1976d2;
         }
         .song-list {
-            margin: 20px 0;
+            min-height: 60px;
         }
         .song-item {
-            background: #f8f9fa;
-            padding: 15px;
+            background: #fff;
+            padding: 14px 12px;
             margin: 10px 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px #0001;
+            cursor: move;
         }
-        .song-info {
-            flex-grow: 1;
+        .song-item.dragging {
+            opacity: 0.5;
+            background: #e3f0ff;
         }
-        .song-title {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .song-bpm {
-            color: #7f8c8d;
-            margin-left: 10px;
-        }
-        .back-btn, .submit-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #3498db;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
+        .song-info { flex: 1; display: flex; flex-direction: column; }
+        .song-title { font-weight: bold; color: #2c3e50; font-size: 16px; }
+        .song-bpm { color: #7f8c8d; margin-left: 8px; font-size: 14px; }
+        .song-speeds { color: #444; font-size: 13px; }
+        .apply-btn {
+            display: block;
+            margin: 0 auto 24px auto;
+            padding: 12px 32px;
+            background: #1976d2;
+            color: #fff;
             border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
+            transition: background 0.2s;
         }
-        .back-btn:hover, .submit-btn:hover {
-            background-color: #2980b9;
+        .apply-btn:hover {
+            background: #1256a3;
         }
+        /* --- Formulaire joli --- */
         .add-song-form {
             background: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
-            margin: 20px 0;
+            padding: 28px 32px 22px 32px;
+            border-radius: 10px;
+            margin: 30px auto 30px auto;
+            max-width: 420px;
+            box-shadow: 0 2px 12px #0001;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .add-song-form h2 {
+            font-size: 1.4em;
+            color: #1976d2;
+            margin-bottom: 10px;
         }
         .form-group {
-            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
         .form-group label {
-            display: block;
-            margin-bottom: 5px;
             color: #2c3e50;
+            font-weight: 500;
         }
         .form-group input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 10px 12px;
+            border: 1px solid #cfd8dc;
+            border-radius: 6px;
             font-size: 16px;
+            background: #fff;
+            transition: border 0.2s;
         }
         .form-group input:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: #1976d2;
+            background: #e3f0ff;
         }
-        .message {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-            text-align: center;
-        }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .delete-btn {
-            background-color: #e74c3c;
-            color: white;
+        .submit-btn {
+            background: #1976d2;
+            color: #fff;
             border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
+            border-radius: 6px;
+            padding: 12px 0;
+            font-size: 17px;
+            font-weight: bold;
             cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
+            margin-top: 10px;
+            transition: background 0.2s;
         }
-        .delete-btn:hover {
-            background-color: #c0392b;
-        }
-        .confirm-dialog {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-        .confirm-dialog-backdrop {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-        }
-        .confirm-dialog-buttons {
-            margin-top: 20px;
-            text-align: right;
-        }
-        .confirm-dialog-buttons button {
-            margin-left: 10px;
-        }
-        .cancel-btn {
-            background-color: #95a5a6;
-        }
-        .cancel-btn:hover {
-            background-color: #7f8c8d;
+        .submit-btn:hover {
+            background: #1256a3;
         }
     </style>
 </head>
@@ -854,15 +956,12 @@ MANAGE_SONGS_HTML = """
     <div class="container">
         <h1>Gestion des Chansons</h1>
         <a href="/" class="back-btn">Retour au Métronome</a>
-        
         {% if message %}
-        <div class="message {{ message_type }}">
-            {{ message }}
-        </div>
+        <div class="message {{ message_type }}">{{ message }}</div>
         {% endif %}
-
         <h2>Ajouter une nouvelle chanson</h2>
         <form action="/manage-songs" method="POST" class="add-song-form">
+            <h2>Ajouter une nouvelle chanson</h2>
             <div class="form-group">
                 <label for="title">Titre de la chanson :</label>
                 <input type="text" id="title" name="title" required>
@@ -885,68 +984,106 @@ MANAGE_SONGS_HTML = """
             </div>
             <button type="submit" class="submit-btn">Ajouter la chanson</button>
         </form>
-        
-        <h2>Liste des chansons</h2>
-        <div class="song-list">
-            {% for song in songs %}
-            <div class="song-item">
-                <input type="checkbox" class="prioritaire-checkbox" data-song-id="{{ song.id }}" {% if song.prioritaire %}checked{% endif %}>
-                <div class="song-info">
-                    <span class="song-title">{{ song.title }}</span>
-                    <span class="song-bpm">{{ song.bpm }} BPM</span>
-                    <div class="song-speeds">
-                        <span class="speed-label">Vitesses :</span>
-                        <span class="speed-value">Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }}</span>
+        <button id="apply-changes-btn" class="apply-btn">Apply changes</button>
+        <h2 style="margin-top:40px;">Liste des chansons</h2>
+        <div class="columns">
+            <div class="song-column" id="normal-column">
+                <div class="column-title">Normal</div>
+                <div class="song-list" id="normal-list">
+                    {% for song in songs if not song.prioritaire %}
+                    <div class="song-item" draggable="true" data-id="{{ song.id }}">
+                        <div class="song-info">
+                            <span class="song-title">{{ song.title }}</span>
+                            <span class="song-bpm">{{ song.bpm }} BPM</span>
+                            <div class="song-speeds">Vitesses : Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }}</div>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
-                <button class="delete-btn" onclick='confirmDelete({{ song.id }}, {{ song.title|trim|tojson }})'>Supprimer</button>
             </div>
-            {% endfor %}
+            <div class="song-column" id="priority-column">
+                <div class="column-title">Priority</div>
+                <div class="song-list" id="priority-list">
+                    {% for song in songs if song.prioritaire %}
+                    <div class="song-item" draggable="true" data-id="{{ song.id }}">
+                        <div class="song-info">
+                            <span class="song-title">{{ song.title }}</span>
+                            <span class="song-bpm">{{ song.bpm }} BPM</span>
+                            <div class="song-speeds">Vitesses : Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
-
-    <!-- Dialog de confirmation -->
-    <div class="confirm-dialog-backdrop" id="confirmDialogBackdrop"></div>
-    <div class="confirm-dialog" id="confirmDialog">
-        <h3>Confirmer la suppression</h3>
-        <p>Êtes-vous sûr de vouloir supprimer la chanson "<span id="songTitle"></span>" ?</p>
-        <div class="confirm-dialog-buttons">
-            <button class="back-btn cancel-btn" onclick="hideConfirmDialog()">Annuler</button>
-            <button class="delete-btn" id="confirmDeleteBtn">Supprimer</button>
-        </div>
-    </div>
-
     <script>
-        function confirmDelete(songId, songTitle) {
-            document.getElementById('songTitle').textContent = songTitle;
-            document.getElementById('confirmDialog').style.display = 'block';
-            document.getElementById('confirmDialogBackdrop').style.display = 'block';
-            document.getElementById('confirmDeleteBtn').onclick = function() {
-                window.location.href = `/delete-song/${songId}`;
-            };
-        }
+        function setupDragAndDrop(listId, otherListId, prioritaireValue) {
+            const list = document.getElementById(listId);
+            const otherList = document.getElementById(otherListId);
+            let draggedItem = null;
 
-        function hideConfirmDialog() {
-            document.getElementById('confirmDialog').style.display = 'none';
-            document.getElementById('confirmDialogBackdrop').style.display = 'none';
-        }
-
-        // Ajout gestion case à cocher prioritaire
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.prioritaire-checkbox').forEach(function(checkbox) {
-                checkbox.addEventListener('change', function() {
-                    const songId = this.getAttribute('data-song-id');
-                    const prioritaire = this.checked ? 1 : 0;
-                    fetch(`/update-song-prioritaire/${songId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ prioritaire })
-                    });
-                });
+            list.addEventListener('dragstart', function(e) {
+                if (e.target.classList.contains('song-item')) {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                }
             });
-        });
+            list.addEventListener('dragend', function(e) {
+                if (e.target.classList.contains('song-item')) {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                }
+            });
+            list.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const currentDragged = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    list.appendChild(currentDragged);
+                } else {
+                    list.insertBefore(currentDragged, afterElement);
+                }
+            });
+            list.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (draggedItem && draggedItem.parentNode !== list) {
+                    list.appendChild(draggedItem);
+                }
+            });
+            otherList.addEventListener('dragover', function(e) { e.preventDefault(); });
+        }
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.song-item:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        document.getElementById('apply-changes-btn').onclick = function() {
+            const normalIds = Array.from(document.querySelectorAll('#normal-list .song-item')).map(item => item.dataset.id);
+            const priorityIds = Array.from(document.querySelectorAll('#priority-list .song-item')).map(item => item.dataset.id);
+            fetch('/update-songs-order-and-priority', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ normal: normalIds, priority: priorityIds })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    alert('Changements appliqués !');
+                } else if (data.error) {
+                    alert('Erreur : ' + data.error);
+                }
+            });
+        };
+        setupDragAndDrop('normal-list', 'priority-list', 0);
+        setupDragAndDrop('priority-list', 'normal-list', 1);
     </script>
 </body>
 </html>
@@ -1403,8 +1540,11 @@ SONGSTERR_LINKS_HTML = """
 
             // Gestionnaire d'événements pour le début du drag
             list.addEventListener('dragstart', function(e) {
-                draggedItem = e.target;
-                e.target.classList.add('dragging');
+                if (e.target.classList.contains('song-item')) {
+                    console.log('Drag start sur', e.target);
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                }
             });
 
             // Gestionnaire d'événements pour la fin du drag
@@ -1722,6 +1862,29 @@ def update_songsterr_links_order():
             
             db.session.commit()
             return jsonify({"message": "Ordre mis à jour avec succès"}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+
+@app.route("/update-songs-order-and-priority", methods=['POST'])
+def update_songs_order_and_priority():
+    with app.app_context():
+        try:
+            data = request.get_json()
+            normal = data.get('normal', [])
+            priority = data.get('priority', [])
+            for idx, song_id in enumerate(normal):
+                song = Song.query.get(song_id)
+                if song:
+                    song.prioritaire = 0
+                    song.display_order = idx
+            for idx, song_id in enumerate(priority):
+                song = Song.query.get(song_id)
+                if song:
+                    song.prioritaire = 1
+                    song.display_order = idx
+            db.session.commit()
+            return jsonify({"message": "Ordre et priorité mis à jour"}), 200
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": str(e)}), 500
