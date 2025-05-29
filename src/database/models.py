@@ -30,4 +30,16 @@ class GuitarGoal(db.Model):
     description = db.Column(db.String(200))
     progress = db.Column(db.Integer, default=0)  # 0-100
     category = db.Column(db.String(50))  # 'technique' ou 'repertoire'
-    target_bpm = db.Column(db.Integer)  # BPM cible si applicable 
+    target_bpm = db.Column(db.Integer)  # BPM cible si applicable
+
+class SongsterrLink(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    song_name = db.Column(db.String(100), nullable=False)
+    songsterr_link = db.Column(db.String(200), nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "song_name": self.song_name,
+            "songsterr_link": self.songsterr_link
+        } 

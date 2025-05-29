@@ -5,7 +5,7 @@ import sys
 # Ajouter le répertoire src au path Python
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.database.models import db, Song, GuitarGoal
+from src.database.models import db, Song, GuitarGoal, SongsterrLink
 from src.routes.song_routes import song_bp, init_db
 
 app = Flask(__name__)
@@ -244,6 +244,7 @@ HTML = """
     <div class="nav-buttons">
         <a href="/manage-songs" class="nav-btn">Gérer les chansons</a>
         <a href="/guitar-goals" class="nav-btn">Objectifs Guitare</a>
+        <a href="/manage-songsterr-links" class="nav-btn">Liens Songsterr</a>
     </div>
     
     <!-- Menu déroulant des chansons -->
@@ -1281,6 +1282,71 @@ EDIT_GOAL_HTML = """
 </html>
 """
 
+SONGSTERR_LINKS_HTML = """
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Liens Songsterr</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1, h2 { color: #2c3e50; text-align: center; }
+        .back-btn, .submit-btn { display: inline-block; padding: 10px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; border: none; cursor: pointer; }
+        .back-btn:hover, .submit-btn:hover { background-color: #2980b9; }
+        .add-link-form { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #2c3e50; }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+        .form-group input:focus { outline: none; border-color: #3498db; }
+        .message { padding: 10px; margin: 10px 0; border-radius: 4px; text-align: center; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .link-list { margin: 20px 0; }
+        .link-item { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .link-info { flex-grow: 1; }
+        .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 14px; transition: background-color 0.3s; }
+        .delete-btn:hover { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestion des liens Songsterr</h1>
+        <a href="/" class="back-btn">Retour au Métronome</a>
+        {% if message %}
+        <div class="message {{ message_type }}">{{ message }}</div>
+        {% endif %}
+        <h2>Ajouter un nouveau lien</h2>
+        <form action="/manage-songsterr-links" method="POST" class="add-link-form">
+            <div class="form-group">
+                <label for="song_name">Nom de la chanson :</label>
+                <input type="text" id="song_name" name="song_name" required>
+            </div>
+            <div class="form-group">
+                <label for="songsterr_link">Lien Songsterr :</label>
+                <input type="url" id="songsterr_link" name="songsterr_link" required>
+            </div>
+            <button type="submit" class="submit-btn">Ajouter le lien</button>
+        </form>
+        <h2>Liste des liens</h2>
+        <div class="link-list">
+            {% for link in links %}
+            <div class="link-item">
+                <div class="link-info">
+                    <span class="song-title">{{ link.song_name }}</span> :
+                    <a href="{{ link.songsterr_link }}" target="_blank">{{ link.songsterr_link }}</a>
+                </div>
+                <form action="/delete-songsterr-link/{{ link.song_name }}" method="POST" style="margin:0;">
+                    <button class="delete-btn" type="submit">Supprimer</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
+"""
+
 @app.route("/")
 def index():
     with app.app_context():
@@ -1477,6 +1543,50 @@ def update_song_prioritaire(song_id):
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": str(e)}), 500
+
+@app.route("/manage-songsterr-links", methods=['GET', 'POST'])
+def manage_songsterr_links():
+    with app.app_context():
+        message = None
+        message_type = None
+        if request.method == 'POST':
+            song_name = request.form.get('song_name')
+            songsterr_link = request.form.get('songsterr_link')
+            try:
+                new_link = SongsterrLink(
+                    song_name=song_name,
+                    songsterr_link=songsterr_link
+                )
+                db.session.add(new_link)
+                db.session.commit()
+                message = f"Lien ajouté pour '{song_name}' !"
+                message_type = "success"
+            except Exception as e:
+                db.session.rollback()
+                message = f"Erreur lors de l'ajout : {str(e)}"
+                message_type = "error"
+        
+        links = SongsterrLink.query.all()
+        return render_template_string(SONGSTERR_LINKS_HTML, links=links, message=message, message_type=message_type)
+
+@app.route("/delete-songsterr-link/<song_name>", methods=['POST'])
+def delete_songsterr_link(song_name):
+    with app.app_context():
+        message = None
+        message_type = None
+        try:
+            link = SongsterrLink.query.filter_by(song_name=song_name).first_or_404()
+            db.session.delete(link)
+            db.session.commit()
+            message = f"Lien supprimé pour '{song_name}' !"
+            message_type = "success"
+        except Exception as e:
+            db.session.rollback()
+            message = f"Erreur lors de la suppression : {str(e)}"
+            message_type = "error"
+        
+        links = SongsterrLink.query.all()
+        return render_template_string(SONGSTERR_LINKS_HTML, links=links, message=message, message_type=message_type)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True) 
