@@ -680,6 +680,23 @@ HTML = """
             document.getElementById('confirmDialogBackdrop').style.display = 'none';
         }
 
+        // Ajout gestion case à cocher prioritaire
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.prioritaire-checkbox').forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const songId = this.getAttribute('data-song-id');
+                    const prioritaire = this.checked ? 1 : 0;
+                    fetch(`/update-song-prioritaire/${songId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ prioritaire })
+                    });
+                });
+            });
+        });
+
     </script>
 </body>
 </html>
@@ -872,6 +889,7 @@ MANAGE_SONGS_HTML = """
         <div class="song-list">
             {% for song in songs %}
             <div class="song-item">
+                <input type="checkbox" class="prioritaire-checkbox" data-song-id="{{ song.id }}" {% if song.prioritaire %}checked{% endif %}>
                 <div class="song-info">
                     <span class="song-title">{{ song.title }}</span>
                     <span class="song-bpm">{{ song.bpm }} BPM</span>
@@ -911,6 +929,23 @@ MANAGE_SONGS_HTML = """
             document.getElementById('confirmDialog').style.display = 'none';
             document.getElementById('confirmDialogBackdrop').style.display = 'none';
         }
+
+        // Ajout gestion case à cocher prioritaire
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.prioritaire-checkbox').forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const songId = this.getAttribute('data-song-id');
+                    const prioritaire = this.checked ? 1 : 0;
+                    fetch(`/update-song-prioritaire/${songId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ prioritaire })
+                    });
+                });
+            });
+        });
     </script>
 </body>
 </html>
@@ -1426,6 +1461,19 @@ def update_song_speeds(song_id):
             
             db.session.commit()
             return jsonify({"message": "Vitesses mises à jour avec succès"}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+
+@app.route("/update-song-prioritaire/<int:song_id>", methods=['POST'])
+def update_song_prioritaire(song_id):
+    with app.app_context():
+        try:
+            song = Song.query.get_or_404(song_id)
+            data = request.get_json()
+            song.prioritaire = int(data['prioritaire'])
+            db.session.commit()
+            return jsonify({"message": "Prioritaire mis à jour avec succès"}), 200
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": str(e)}), 500

@@ -10,6 +10,7 @@ class Song(db.Model):
     min_speed = db.Column(db.Integer, default=60)  # Vitesse minimale recommandée
     max_speed = db.Column(db.Integer, default=120)  # Vitesse maximale recommandée
     challenge_speed = db.Column(db.Integer, default=140)  # Vitesse de défi
+    prioritaire = db.Column(db.Integer, default=0)  # 0 ou 1 pour indiquer si la chanson est prioritaire
 
     def to_dict(self):
         return {
@@ -19,7 +20,8 @@ class Song(db.Model):
             "beats_per_measure": self.beats_per_measure,
             "min_speed": self.min_speed,
             "max_speed": self.max_speed,
-            "challenge_speed": self.challenge_speed
+            "challenge_speed": self.challenge_speed,
+            "prioritaire": self.prioritaire
         }
 
 class GuitarGoal(db.Model):
