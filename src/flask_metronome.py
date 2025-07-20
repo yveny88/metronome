@@ -1033,6 +1033,7 @@ MANAGE_SONGS_HTML = """
                 if (e.target.classList.contains('song-item')) {
                     e.target.classList.remove('dragging');
                     draggedItem = null;
+                    sendOrderUpdate();
                 }
             });
             list.addEventListener('dragover', function(e) {
@@ -1065,7 +1066,7 @@ MANAGE_SONGS_HTML = """
                 }
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
-        document.getElementById('apply-changes-btn').onclick = function() {
+        function sendOrderUpdate(showAlert = false) {
             const normalIds = Array.from(document.querySelectorAll('#normal-list .song-item')).map(item => item.dataset.id);
             const priorityIds = Array.from(document.querySelectorAll('#priority-list .song-item')).map(item => item.dataset.id);
             fetch('/update-songs-order-and-priority', {
@@ -1075,12 +1076,17 @@ MANAGE_SONGS_HTML = """
             })
             .then(res => res.json())
             .then(data => {
-                if (data.message) {
-                    alert('Changements appliqués !');
-                } else if (data.error) {
-                    alert('Erreur : ' + data.error);
+                if (showAlert) {
+                    if (data.message) {
+                        alert('Changements appliqués !');
+                    } else if (data.error) {
+                        alert('Erreur : ' + data.error);
+                    }
                 }
             });
+        }
+        document.getElementById('apply-changes-btn').onclick = function() {
+            sendOrderUpdate(true);
         };
         setupDragAndDrop('normal-list', 'priority-list', 0);
         setupDragAndDrop('priority-list', 'normal-list', 1);
