@@ -22,4 +22,4 @@ COPY src/ ./src/
 
 EXPOSE 5000
 
-CMD ["python", "src/flask_metronome.py"] 
+CMD ["python", "src/flask_metronome.py"]

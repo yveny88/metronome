@@ -24,6 +24,8 @@ class Song(db.Model):
             "prioritaire": self.prioritaire
         }
 
+
+
 class GuitarGoal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
@@ -45,4 +47,4 @@ class SongsterrLink(db.Model):
             'song_name': self.song_name,
             'songsterr_link': self.songsterr_link,
             'display_order': self.display_order
-        } 
+        }

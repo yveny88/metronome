@@ -24,4 +24,4 @@ with app.app_context():
         db.session.commit()
         print("Base de données initialisée avec 3 chansons.")
     else:
-        print("La base de données existe déjà et contient des chansons.") 
+        print("La base de données existe déjà et contient des chansons.")

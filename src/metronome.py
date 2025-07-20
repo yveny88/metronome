@@ -78,4 +78,4 @@ class Metronome:
 if __name__ == "__main__":
     root = tk.Tk()
     app = Metronome(root)
-    root.mainloop() 
+    root.mainloop()
