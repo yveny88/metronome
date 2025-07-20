@@ -367,8 +367,9 @@ HTML = """
         <select id="song-select">
             <option value="">Sélectionner une chanson...</option>
             {% for song in songs %}
-            <option value="{{ song.bpm }}" 
+            <option value="{{ song.bpm }}"
                     data-song-id="{{ song.id }}"
+                    data-title="{{ song.title }}"
                     data-min-speed="{{ song.min_speed }}"
                     data-max-speed="{{ song.max_speed }}"
                     data-challenge-speed="{{ song.challenge_speed }}">
@@ -380,6 +381,9 @@ HTML = """
 
     <!-- Informations de la chanson sélectionnée -->
     <div id="song-info" style="display: none; margin: 20px auto; max-width: 400px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+        <div style="margin-bottom: 10px;">
+            <strong>Titre :</strong> <span id="selected-title"></span>
+        </div>
         <div style="margin-bottom: 10px;">
             <strong>Song BPM:</strong> <span id="selected-bpm"></span>
         </div>
@@ -446,6 +450,7 @@ HTML = """
             {% for song in songs %}
             {
                 title: "{{ song.title }}",
+                bpm: {{ song.bpm }},
                 min_speed: {{ song.min_speed }},
                 max_speed: {{ song.max_speed }},
                 challenge_speed: {{ song.challenge_speed }}
@@ -628,8 +633,10 @@ HTML = """
             stopBtn.disabled = false;
             fullWorkoutBtn.textContent = "En cours...";
 
-            for (const song of prioritizedSongs) {
+            for (let i = 0; i < prioritizedSongs.length; i++) {
+                const song = prioritizedSongs[i];
                 if (shouldStop) { resetMetronome(); return; }
+                displaySongInfo(song);
                 bpmInputs[0].value = song.min_speed;
                 bpmInputs[1].value = song.max_speed;
                 bpmInputs[2].value = song.challenge_speed;
@@ -641,6 +648,10 @@ HTML = """
                 if (shouldStop) { resetMetronome(); return; }
                 await playMetronomeSequence();
                 if (shouldStop) { resetMetronome(); return; }
+                const nextSong = prioritizedSongs[i + 1];
+                if (nextSong) {
+                    displaySongInfo(nextSong);
+                }
                 await sleep(5000);
             }
 
@@ -668,6 +679,7 @@ HTML = """
             intermediateDots2.forEach(d => d.classList.remove('active'));
             finalDots.forEach(d => d.classList.remove('active'));
             countdownDiv.textContent = '';
+            displaySongInfo(null);
         }
 
         async function playCountdown(bpm) {
@@ -776,18 +788,32 @@ HTML = """
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
+        function displaySongInfo(song) {
+            const songInfo = document.getElementById('song-info');
+            if (song) {
+                document.getElementById('selected-title').textContent = song.title;
+                document.getElementById('selected-bpm').textContent = song.bpm;
+                document.getElementById('min-speed').textContent = song.min_speed;
+                document.getElementById('max-speed').textContent = song.max_speed;
+                document.getElementById('challenge-speed').textContent = song.challenge_speed;
+                songInfo.style.display = 'block';
+            } else {
+                songInfo.style.display = 'none';
+            }
+        }
+
         // Ajouter la gestion de l'affichage des informations de la chanson
         document.getElementById('song-select').addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
-            const songInfo = document.getElementById('song-info');
-            
             if (this.value) {
                 // Mettre à jour l'affichage des informations
-                document.getElementById('selected-bpm').textContent = this.value;
-                document.getElementById('min-speed').textContent = selectedOption.dataset.minSpeed;
-                document.getElementById('max-speed').textContent = selectedOption.dataset.maxSpeed;
-                document.getElementById('challenge-speed').textContent = selectedOption.dataset.challengeSpeed;
-                songInfo.style.display = 'block';
+                displaySongInfo({
+                    title: selectedOption.dataset.title,
+                    bpm: this.value,
+                    min_speed: selectedOption.dataset.minSpeed,
+                    max_speed: selectedOption.dataset.maxSpeed,
+                    challenge_speed: selectedOption.dataset.challengeSpeed
+                });
 
                 // Mettre à jour les valeurs des sliders
                 bpmInputs[0].value = selectedOption.dataset.minSpeed;
@@ -800,7 +826,7 @@ HTML = """
                 createIntermediateDots2();
                 createFinalDots();
             } else {
-                songInfo.style.display = 'none';
+                displaySongInfo(null);
             }
         });
 
