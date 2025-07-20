@@ -425,6 +425,7 @@ HTML = """
     </div>
     <div class="controls">
         <button id="start-stop">Start</button>
+        <button id="full-workout">Full Workout</button>
         <button id="stop-btn" disabled>Arrêter</button>
         <button id="update-speeds" style="margin-left: 20px; background-color: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Mettre à jour les vitesses</button>
     </div>
@@ -440,6 +441,17 @@ HTML = """
         const NUM_POINTS_1 = 10;
         const NUM_POINTS_2 = 5;
         const NUM_FINAL_POINTS = 10;
+
+        const prioritizedSongs = [
+            {% for song in songs %}
+            {
+                title: "{{ song.title }}",
+                min_speed: {{ song.min_speed }},
+                max_speed: {{ song.max_speed }},
+                challenge_speed: {{ song.challenge_speed }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
 
         function createScale(scaleId) {
             const scale = document.getElementById(scaleId);
@@ -581,6 +593,7 @@ HTML = """
         let isPlaying = false;
         const dot = document.getElementById('dot');
         const btn = document.getElementById('start-stop');
+        const fullWorkoutBtn = document.getElementById('full-workout');
         const stopBtn = document.getElementById('stop-btn');
         const click = document.getElementById('click');
         const countdownDiv = document.getElementById('countdown');
@@ -595,6 +608,7 @@ HTML = """
             isPlaying = true;
             shouldStop = false;
             btn.disabled = true;
+            fullWorkoutBtn.disabled = true;
             stopBtn.disabled = false;
             btn.textContent = "En cours...";
             const bpm1 = parseInt(bpmInputs[0].value);
@@ -603,6 +617,34 @@ HTML = """
             playMetronomeSequence().then(() => {
                 resetMetronome();
             });
+        };
+
+        fullWorkoutBtn.onclick = async function() {
+            if (isPlaying) return;
+            isPlaying = true;
+            shouldStop = false;
+            fullWorkoutBtn.disabled = true;
+            btn.disabled = true;
+            stopBtn.disabled = false;
+            fullWorkoutBtn.textContent = "En cours...";
+
+            for (const song of prioritizedSongs) {
+                if (shouldStop) { resetMetronome(); return; }
+                bpmInputs[0].value = song.min_speed;
+                bpmInputs[1].value = song.max_speed;
+                bpmInputs[2].value = song.challenge_speed;
+                createSliders();
+                createIntermediateDots1();
+                createIntermediateDots2();
+                createFinalDots();
+                await playCountdown(parseInt(song.min_speed));
+                if (shouldStop) { resetMetronome(); return; }
+                await playMetronomeSequence();
+                if (shouldStop) { resetMetronome(); return; }
+                await sleep(5000);
+            }
+
+            resetMetronome();
         };
         
         stopBtn.onclick = function() {
@@ -615,8 +657,10 @@ HTML = """
             isPlaying = false;
             shouldStop = false;
             btn.disabled = false;
+            fullWorkoutBtn.disabled = false;
             stopBtn.disabled = true;
             btn.textContent = "Start";
+            fullWorkoutBtn.textContent = "Full Workout";
             stopBtn.textContent = "Arrêter";
             dot.classList.remove('active');
             sliderDots.forEach(d => d.classList.remove('active'));
