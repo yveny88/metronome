@@ -4,6 +4,8 @@ import pygame
 import time
 import threading
 
+from src.recorder import start_recording, stop_recording, play_recording
+
 class Metronome:
     def __init__(self, root):
         self.root = root
@@ -12,10 +14,12 @@ class Metronome:
         
         # Initialisation de pygame pour le son
         pygame.mixer.init()
-        
+
         # Variables
         self.bpm = tk.IntVar(value=120)
         self.is_playing = False
+        self.is_recording = False
+        self.last_recording = None
         self.thread = None
         
         # Création de l'interface
@@ -37,16 +41,40 @@ class Metronome:
         ttk.Label(bpm_frame, text="BPM:").grid(row=0, column=0, padx=5)
         bpm_spinbox = ttk.Spinbox(bpm_frame, from_=40, to=208, textvariable=self.bpm, width=5)
         bpm_spinbox.grid(row=0, column=1, padx=5)
-        
+
         # Bouton Start/Stop
         self.start_button = ttk.Button(main_frame, text="Start", command=self.toggle_metronome)
-        self.start_button.grid(row=2, column=0, columnspan=2, pady=20)
-        
+        self.start_button.grid(row=2, column=0, columnspan=2, pady=10)
+
+        # Boutons d'enregistrement et de lecture
+        controls = ttk.Frame(main_frame)
+        controls.grid(row=3, column=0, columnspan=2)
+
+        self.record_button = ttk.Button(controls, text="Record", command=self.toggle_record)
+        self.record_button.grid(row=0, column=0, padx=5)
+
+        self.play_button = ttk.Button(controls, text="Play", command=play_recording)
+        self.play_button.grid(row=0, column=1, padx=5)
+
         # Indicateur visuel
         self.indicator = ttk.Label(main_frame, text="●", font=('Helvetica', 48))
-        self.indicator.grid(row=3, column=0, columnspan=2)
+        self.indicator.grid(row=4, column=0, columnspan=2)
         self.indicator.configure(foreground='gray')
-        
+
+    def toggle_record(self):
+        if not self.is_recording:
+            if not self.is_playing:
+                self.toggle_metronome()
+            start_recording()
+            self.record_button.configure(text="Stop")
+            self.is_recording = True
+        else:
+            if self.is_playing:
+                self.toggle_metronome()
+            self.last_recording = stop_recording()
+            self.record_button.configure(text="Record")
+            self.is_recording = False
+
     def toggle_metronome(self):
         if not self.is_playing:
             self.is_playing = True
