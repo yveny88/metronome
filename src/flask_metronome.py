@@ -235,6 +235,12 @@ HTML = """
             margin-top: 20px;
             text-align: center;
         }
+        .countdown {
+            font-size: 48px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-top: 10px;
+        }
         .columns {
             display: flex;
             gap: 40px;
@@ -424,6 +430,7 @@ HTML = """
     </div>
     <div id="dot" class="dot">●</div>
     <div id="current-bpm" class="current-bpm">100 BPM</div>
+    <div id="countdown" class="countdown"></div>
     <audio id="click" src="/static/metronome-85688.mp3"></audio>
     <script>
         console.log('JS chargé sur /manage-songs');
@@ -576,19 +583,23 @@ HTML = """
         const btn = document.getElementById('start-stop');
         const stopBtn = document.getElementById('stop-btn');
         const click = document.getElementById('click');
+        const countdownDiv = document.getElementById('countdown');
         const beatsInput = document.getElementById('beats');
         const interMeasuresInput = document.getElementById('interMeasures');
         
         // Variable pour contrôler l'arrêt du métronome
         let shouldStop = false;
 
-        btn.onclick = function() {
+        btn.onclick = async function() {
             if (isPlaying) return;
             isPlaying = true;
             shouldStop = false;
             btn.disabled = true;
             stopBtn.disabled = false;
             btn.textContent = "En cours...";
+            const bpm1 = parseInt(bpmInputs[0].value);
+            await playCountdown(bpm1);
+            if (shouldStop) { resetMetronome(); return; }
             playMetronomeSequence().then(() => {
                 resetMetronome();
             });
@@ -612,6 +623,21 @@ HTML = """
             intermediateDots1.forEach(d => d.classList.remove('active'));
             intermediateDots2.forEach(d => d.classList.remove('active'));
             finalDots.forEach(d => d.classList.remove('active'));
+            countdownDiv.textContent = '';
+        }
+
+        async function playCountdown(bpm) {
+            const delay = 60000 / bpm;
+            for (let i = 1; i <= 4; i++) {
+                countdownDiv.textContent = i;
+                dot.classList.add('active');
+                click.currentTime = 0;
+                click.play();
+                await sleep(100);
+                dot.classList.remove('active');
+                await sleep(delay - 100);
+            }
+            countdownDiv.textContent = '';
         }
 
         async function playMetronomeSequence() {
