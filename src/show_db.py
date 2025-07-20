@@ -26,4 +26,4 @@ with app.app_context():
             print(f"Temps : {song.beats_per_measure}/4")
             print("-" * 50)
     else:
-        print("La base de données est vide.") 
+        print("La base de données est vide.")
