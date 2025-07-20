@@ -199,7 +199,7 @@ HTML = """
             display: inline-block;
             margin: 20px auto;
             padding: 10px 20px;
-            background-color: #3498db;
+            background-color: #9b59b6;
             color: white;
             text-decoration: none;
             border-radius: 5px;
@@ -207,7 +207,7 @@ HTML = """
             transition: background-color 0.3s;
         }
         .manage-songs-btn:hover {
-            background-color: #2980b9;
+            background-color: #8e44ad;
         }
         .nav-buttons {
             margin: 20px auto;
@@ -218,7 +218,7 @@ HTML = """
         .nav-btn {
             display: inline-block;
             padding: 10px 20px;
-            background-color: #3498db;
+            background-color: #9b59b6;
             color: white;
             text-decoration: none;
             border-radius: 5px;
@@ -226,7 +226,7 @@ HTML = """
             transition: background-color 0.3s;
         }
         .nav-btn:hover {
-            background-color: #2980b9;
+            background-color: #8e44ad;
         }
         .current-bpm {
             font-size: 48px;
@@ -1147,14 +1147,14 @@ GUITAR_GOALS_HTML = """
         .back-btn {
             display: inline-block;
             padding: 10px 20px;
-            background-color: #3498db;
+            background-color: #9b59b6;
             color: white;
             text-decoration: none;
             border-radius: 5px;
             margin: 20px 0;
         }
         .back-btn:hover {
-            background-color: #2980b9;
+            background-color: #8e44ad;
         }
         .add-goal-form {
             background: #f8f9fa;
@@ -1429,8 +1429,11 @@ SONGSTERR_LINKS_HTML = """
         body { font-family: Arial, sans-serif; margin: 20px; padding: 20px; }
         .container { max-width: 800px; margin: 0 auto; }
         h1, h2 { color: #2c3e50; text-align: center; }
-        .back-btn, .submit-btn { display: inline-block; padding: 10px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; border: none; cursor: pointer; }
-        .back-btn:hover, .submit-btn:hover { background-color: #2980b9; }
+        .back-btn, .submit-btn { display: inline-block; padding: 10px 20px; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; border: none; cursor: pointer; }
+        .back-btn { background-color: #9b59b6; }
+        .submit-btn { background-color: #3498db; }
+        .back-btn:hover { background-color: #8e44ad; }
+        .submit-btn:hover { background-color: #2980b9; }
         .add-link-form { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; color: #2c3e50; }
