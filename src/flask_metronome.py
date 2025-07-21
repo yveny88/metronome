@@ -621,7 +621,13 @@ HTML = """
 
         async function startRecording(filename) {
             recordedChunks = [];
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false
+                }
+            });
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 192000 });
             currentFilename = filename;
             mediaRecorder.ondataavailable = e => {
