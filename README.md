@@ -8,6 +8,7 @@ Une application métronome simple avec interface graphique, permettant de régle
 - Contrôle du tempo (BPM) de 40 à 208
 - Indicateur visuel des battements
 - Bouton Start/Stop
+- Possibilite d'enregistrer votre jeu de guitare
 
 ## Installation avec Docker
 
@@ -39,6 +40,7 @@ python src/metronome.py
 2. Utilisez le spinbox pour régler le BPM (40-208)
 3. Cliquez sur "Start" pour démarrer le métronome
 4. Cliquez sur "Stop" pour arrêter
+5. Utilisez le bouton "Start Recording" pour enregistrer puis "Stop Recording" pour terminer
 
 ## Structure du projet
 
