@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, request, jsonify, redirect, url_for, send_from_directory
 import os
 import sys
+from werkzeug.utils import secure_filename
 
 # Ajouter le répertoire src au path Python
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -609,25 +610,39 @@ HTML = """
         const recordBtn = document.getElementById('record-btn');
         let mediaRecorder;
         let recordedChunks = [];
+        let currentFilename = '';
+
+        async function startRecording(filename) {
+            recordedChunks = [];
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            currentFilename = filename;
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('file', blob, filename);
+                formData.append('filename', filename);
+                await fetch('/upload-recording', { method: 'POST', body: formData });
+            };
+            mediaRecorder.start();
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
 
         recordBtn.onclick = async function() {
             if (recordBtn.textContent === 'Start Recording') {
-                recordedChunks = [];
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = e => {
-                    if (e.data.size > 0) recordedChunks.push(e.data);
-                };
-                mediaRecorder.onstop = async () => {
-                    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-                    const formData = new FormData();
-                    formData.append('file', blob, 'recording.webm');
-                    await fetch('/upload-recording', { method: 'POST', body: formData });
-                };
-                mediaRecorder.start();
+                const filename = `manual_${Date.now()}.webm`;
+                await startRecording(filename);
                 recordBtn.textContent = 'Stop Recording';
             } else {
-                mediaRecorder.stop();
+                stopRecording();
                 recordBtn.textContent = 'Start Recording';
             }
         };
@@ -643,10 +658,17 @@ HTML = """
             fullWorkoutBtn.disabled = true;
             stopBtn.disabled = false;
             btn.textContent = "En cours...";
+
+            const selectedOption = document.getElementById('song-select').options[document.getElementById('song-select').selectedIndex];
+            const title = selectedOption ? selectedOption.dataset.title || 'cycle' : 'cycle';
+            const filename = `${title.replace(/\s+/g, '_')}_${Date.now()}.webm`;
+            await startRecording(filename);
+
             const bpm1 = parseInt(bpmInputs[0].value);
             await playCountdown(bpm1);
-            if (shouldStop) { resetMetronome(); return; }
+            if (shouldStop) { stopRecording(); resetMetronome(); return; }
             playMetronomeSequence().then(() => {
+                stopRecording();
                 resetMetronome();
             });
         };
@@ -671,9 +693,14 @@ HTML = """
                 createIntermediateDots1();
                 createIntermediateDots2();
                 createFinalDots();
+
+                const filename = `${song.title.replace(/\s+/g, '_')}_${Date.now()}.webm`;
+                await startRecording(filename);
+
                 await playCountdown(parseInt(song.min_speed));
-                if (shouldStop) { resetMetronome(); return; }
+                if (shouldStop) { stopRecording(); resetMetronome(); return; }
                 await playMetronomeSequence();
+                stopRecording();
                 if (shouldStop) { resetMetronome(); return; }
                 const nextSong = prioritizedSongs[i + 1];
                 if (nextSong) {
@@ -689,6 +716,7 @@ HTML = """
             shouldStop = true;
             stopBtn.disabled = true;
             stopBtn.textContent = "Arrêt en cours...";
+            stopRecording();
         };
         
         function resetMetronome() {
@@ -707,6 +735,7 @@ HTML = """
             finalDots.forEach(d => d.classList.remove('active'));
             countdownDiv.textContent = '';
             displaySongInfo(null);
+            stopRecording();
         }
 
         async function playCountdown(bpm) {
@@ -2024,8 +2053,10 @@ def delete_songsterr_link(song_name):
 @app.route("/upload-recording", methods=['POST'])
 def upload_recording():
     file = request.files.get('file')
+    filename = request.form.get('filename', 'recording.webm')
     if file:
-        save_path = os.path.join('/app/data', 'recording.webm')
+        safe_name = secure_filename(filename)
+        save_path = os.path.join('/app/data', safe_name)
         file.save(save_path)
         return jsonify({"message": "Fichier enregistré"}), 200
     return jsonify({"error": "Aucun fichier"}), 400
