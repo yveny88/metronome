@@ -34,13 +34,13 @@ pip install -r requirements.txt
 docker-compose up
 
 # Sans Docker
-python src/metronome.py
+python src/flask_metronome.py
 ```
-
-2. Utilisez le spinbox pour régler le BPM (40-208)
-3. Cliquez sur "Start" pour démarrer le métronome
-4. Cliquez sur "Stop" pour arrêter
-5. Utilisez le bouton "Start Recording" pour enregistrer puis "Stop Recording" pour terminer
+2. Ouvrez votre navigateur sur http://localhost:5000
+3. Utilisez le spinbox pour régler le BPM (40-208)
+4. Cliquez sur "Start" pour démarrer le métronome
+5. Cliquez sur "Stop" pour arrêter
+6. Utilisez le bouton "Start Recording" pour enregistrer puis "Stop Recording" pour terminer
 
 ## Structure du projet
 

@@ -4,9 +4,6 @@ import pygame
 import time
 import threading
 
-import sounddevice as sd
-import soundfile as sf
-
 class Metronome:
     def __init__(self, root):
         self.root = root
@@ -20,9 +17,6 @@ class Metronome:
         self.bpm = tk.IntVar(value=120)
         self.is_playing = False
         self.thread = None
-        self.recording = False
-        self.record_thread = None
-        self.audio_file = None
         
         # Création de l'interface
         self.create_widgets()
@@ -47,12 +41,10 @@ class Metronome:
         # Bouton Start/Stop
         self.start_button = ttk.Button(main_frame, text="Start", command=self.toggle_metronome)
         self.start_button.grid(row=2, column=0, columnspan=2, pady=20)
-        self.record_button = ttk.Button(main_frame, text="Start Recording", command=self.toggle_recording)
-        self.record_button.grid(row=3, column=0, columnspan=2, pady=10)
         
         # Indicateur visuel
         self.indicator = ttk.Label(main_frame, text="●", font=('Helvetica', 48))
-        self.indicator.grid(row=4, column=0, columnspan=2)
+        self.indicator.grid(row=3, column=0, columnspan=2)
         self.indicator.configure(foreground='gray')
         
     def toggle_metronome(self):
@@ -82,38 +74,6 @@ class Metronome:
             self.indicator.configure(foreground='gray')
             self.root.update()
             time.sleep(delay/2)
-    def toggle_recording(self):
-        if not self.recording:
-            self.start_recording()
-        else:
-            self.stop_recording()
-
-    def start_recording(self):
-        self.recording = True
-        self.record_button.configure(text="Stop Recording")
-        self.audio_file = sf.SoundFile("guitar_recording.wav", mode="w", samplerate=44100, channels=1)
-        self.record_thread = threading.Thread(target=self.record_audio)
-        self.record_thread.daemon = True
-        self.record_thread.start()
-
-    def record_audio(self):
-        def callback(indata, frames, time_info, status):
-            if status:
-                print(status)
-            self.audio_file.write(indata.copy())
-
-        with sd.InputStream(samplerate=44100, channels=1, callback=callback):
-            while self.recording:
-                sd.sleep(100)
-
-    def stop_recording(self):
-        self.recording = False
-        if self.record_thread:
-            self.record_thread.join()
-        if self.audio_file:
-            self.audio_file.close()
-            self.audio_file = None
-        self.record_button.configure(text="Start Recording")
 
 if __name__ == "__main__":
     root = tk.Tk()
