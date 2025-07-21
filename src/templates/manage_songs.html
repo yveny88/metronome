@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Gestion des chansons{% endblock %}
+{% block content %}
+<h1>Gestion des chansons</h1>
+{% if message %}
+<div class="alert alert-{{ 'success' if message_type=='success' else 'danger' }}" role="alert">
+  {{ message }}
+</div>
+{% endif %}
+<form method="post" class="mb-3">
+  <div class="row g-3">
+    <div class="col-md-4"><input class="form-control" type="text" name="title" placeholder="Titre" required></div>
+    <div class="col-md-2"><input class="form-control" type="number" name="bpm" placeholder="BPM" required></div>
+    <div class="col-md-2"><input class="form-control" type="number" name="min_speed" placeholder="Min" value="60"></div>
+    <div class="col-md-2"><input class="form-control" type="number" name="max_speed" placeholder="Max" value="120"></div>
+    <div class="col-md-2"><input class="form-control" type="number" name="challenge_speed" placeholder="Défi" value="140"></div>
+  </div>
+  <button class="btn btn-primary mt-2" type="submit">Ajouter</button>
+</form>
+<table class="table">
+  <thead><tr><th>Titre</th><th>BPM</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for song in songs %}
+    <tr>
+      <td>{{ song.title }}</td>
+      <td>{{ song.bpm }}</td>
+      <td><a class="btn btn-sm btn-danger" href="{{ url_for('songs.delete_song', song_id=song.id) }}">Supprimer</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
