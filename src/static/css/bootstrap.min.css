@@ -1,0 +1,16 @@
+/* Simplified Bootstrap placeholder */
+.container{max-width:960px;margin:auto;padding:15px;}
+.navbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:.5rem 1rem;background-color:#e3f2fd;}
+.navbar-brand{font-size:1.25rem;margin-right:1rem;}
+.navbar-nav{display:flex;gap:.5rem;}
+.nav-link{color:#0d6efd;text-decoration:none;padding:.25rem .5rem;}
+.btn{display:inline-block;font-weight:400;line-height:1.5;text-align:center;text-decoration:none;padding:.375rem .75rem;border:1px solid transparent;border-radius:.25rem;cursor:pointer;}
+.btn-primary{color:#fff;background-color:#0d6efd;border-color:#0d6efd;}
+.btn-danger{color:#fff;background-color:#dc3545;border-color:#dc3545;}
+.table{width:100%;margin-bottom:1rem;border-collapse:collapse;}
+.table th,.table td{padding:.5rem;border-top:1px solid #dee2e6;}
+.alert{padding:.75rem 1.25rem;border:1px solid transparent;border-radius:.25rem;margin-bottom:1rem;}
+.alert-success{color:#0f5132;background-color:#d1e7dd;border-color:#badbcc;}
+.alert-danger{color:#842029;background-color:#f8d7da;border-color:#f5c2c7;}
+.list-group{display:block;padding-left:0;margin-bottom:1rem;}
+.list-group-item{position:relative;display:block;padding:.5rem 1rem;background-color:#fff;border:1px solid rgba(0,0,0,.125);} 

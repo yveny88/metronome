@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Objectifs Guitare{% endblock %}
+{% block content %}
+<h1>Objectifs Guitare</h1>
+{% if message %}
+<div class="alert alert-{{ 'success' if message_type=='success' else 'danger' }}">{{ message }}</div>
+{% endif %}
+<form method="post" class="mb-3">
+  <div class="row g-2">
+    <div class="col"><input class="form-control" type="text" name="title" placeholder="Titre" required></div>
+    <div class="col"><input class="form-control" type="text" name="description" placeholder="Description"></div>
+    <div class="col"><input class="form-control" type="text" name="category" placeholder="Catégorie"></div>
+    <div class="col"><input class="form-control" type="number" name="progress" placeholder="Progression" value="0"></div>
+    <div class="col"><input class="form-control" type="number" name="target_bpm" placeholder="BPM cible"></div>
+  </div>
+  <button class="btn btn-primary mt-2">Ajouter</button>
+</form>
+<table class="table">
+  <thead><tr><th>Titre</th><th>Progression</th><th>Actions</th></tr></thead>
+  <tbody>
+  {% for goal in goals %}
+    <tr>
+      <td>{{ goal.title }}</td>
+      <td>{{ goal.progress }}%</td>
+      <td>
+        <a class="btn btn-sm btn-secondary" href="{{ url_for('goals.edit_goal', goal_id=goal.id) }}">Éditer</a>
+        <a class="btn btn-sm btn-danger" href="{{ url_for('goals.delete_goal', goal_id=goal.id) }}">Supprimer</a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

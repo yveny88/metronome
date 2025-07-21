@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Liens Songsterr{% endblock %}
+{% block content %}
+<h1>Liens Songsterr</h1>
+{% if message %}
+<div class="alert alert-{{ 'success' if message_type=='success' else 'danger' }}">{{ message }}</div>
+{% endif %}
+<form method="post" class="mb-3">
+  <div class="row g-2">
+    <div class="col"><input class="form-control" type="text" name="song_name" placeholder="Nom" required></div>
+    <div class="col"><input class="form-control" type="text" name="songsterr_link" placeholder="Lien" required></div>
+  </div>
+  <button class="btn btn-primary mt-2">Ajouter</button>
+</form>
+<ul class="list-group">
+{% for link in links %}
+  <li class="list-group-item">
+    <a href="{{ link.songsterr_link }}">{{ link.song_name }}</a>
+    <form class="d-inline" method="post" action="{{ url_for('songsterr.delete_link', song_name=link.song_name) }}">
+      <button class="btn btn-sm btn-danger">Supprimer</button>
+    </form>
+  </li>
+{% endfor %}
+</ul>
+{% endblock %}
