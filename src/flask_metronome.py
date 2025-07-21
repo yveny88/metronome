@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, jsonify, redirect, url_for
+from flask import Flask, render_template_string, request, jsonify, redirect, url_for, send_from_directory
 import os
 import sys
 
@@ -956,6 +956,38 @@ HTML = """
 </html>
 """
 
+RECORDINGS_HTML = """
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Enregistrements</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .back-btn { display: inline-block; padding: 10px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
+        .recording { margin-bottom: 15px; }
+        audio { display: block; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn">Retour au Métronome</a>
+    <h1>Liste des enregistrements</h1>
+    {% if recordings %}
+    <ul>
+    {% for rec in recordings %}
+        <li class="recording">
+            {{ rec }}
+            <audio controls src="{{ url_for('data_file', filename=rec) }}"></audio>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    <p>Aucun enregistrement trouvé.</p>
+    {% endif %}
+</body>
+</html>
+"""
+
 # Template pour la page de gestion des chansons
 MANAGE_SONGS_HTML = """
 <!DOCTYPE html>
@@ -1736,6 +1768,19 @@ def index():
     with app.app_context():
         songs = Song.query.filter_by(prioritaire=1).all()
     return render_template_string(HTML, songs=songs)
+
+@app.route("/recordings")
+def recordings_page():
+    recordings_dir = '/app/data'
+    try:
+        files = [f for f in os.listdir(recordings_dir) if f.lower().endswith(('.webm', '.wav', '.mp3'))]
+    except FileNotFoundError:
+        files = []
+    return render_template_string(RECORDINGS_HTML, recordings=files)
+
+@app.route('/data/<path:filename>')
+def data_file(filename):
+    return send_from_directory('/app/data', filename)
 
 @app.route("/manage-songs", methods=['GET', 'POST'])
 def manage_songs():
