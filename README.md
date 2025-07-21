@@ -8,7 +8,7 @@ Une application métronome simple avec interface graphique, permettant de régle
 - Contrôle du tempo (BPM) de 40 à 208
 - Indicateur visuel des battements
 - Bouton Start/Stop
-- Possibilite d'enregistrer votre jeu de guitare
+- Possibilite d'enregistrer votre jeu de guitare avec conversion MP3 de meilleure qualité
 
 ## Installation avec Docker
 
@@ -25,6 +25,7 @@ docker-compose up --build
 ```bash
 pip install -r requirements.txt
 ```
+3. Installez `ffmpeg` pour permettre la conversion des enregistrements en MP3.
 
 ## Utilisation
 

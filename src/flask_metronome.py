@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, request, jsonify, redirect, url_for, send_from_directory
 import os
 import sys
+import subprocess
 from werkzeug.utils import secure_filename
 
 # Ajouter le répertoire src au path Python
@@ -621,7 +622,7 @@ HTML = """
         async function startRecording(filename) {
             recordedChunks = [];
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 192000 });
             currentFilename = filename;
             mediaRecorder.ondataavailable = e => {
                 if (e.data.size > 0) recordedChunks.push(e.data);
@@ -2091,6 +2092,20 @@ def upload_recording():
         safe_name = secure_filename(filename)
         save_path = os.path.join('/app/data', safe_name)
         file.save(save_path)
+        mp3_path = os.path.join('/app/data', os.path.splitext(safe_name)[0] + '.mp3')
+        try:
+            subprocess.run([
+                'ffmpeg',
+                '-y',
+                '-i', save_path,
+                '-vn',
+                '-ar', '44100',
+                '-ac', '2',
+                '-b:a', '192k',
+                mp3_path
+            ], check=True)
+        except Exception as e:
+            print(f"Error converting to mp3: {e}")
         return jsonify({"message": "Fichier enregistré"}), 200
     return jsonify({"error": "Aucun fichier"}), 400
 
