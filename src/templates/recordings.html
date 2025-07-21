@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Enregistrements{% endblock %}
+{% block content %}
+<h1>Liste des enregistrements</h1>
+{% if message %}
+<div class="alert alert-{{ 'success' if message_type=='success' else 'danger' }}">{{ message }}</div>
+{% endif %}
+{% if recordings %}
+<ul class="list-group">
+{% for rec in recordings %}
+  <li class="list-group-item">
+    {{ rec }}
+    <a class="btn btn-sm btn-danger" href="{{ url_for('recordings.delete_recording', filename=rec) }}">Supprimer</a>
+    <audio controls src="{{ url_for('recordings.data_file', filename=rec) }}"></audio>
+  </li>
+{% endfor %}
+</ul>
+{% else %}
+<p>Aucun enregistrement trouvé.</p>
+{% endif %}
+{% endblock %}

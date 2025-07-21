@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Modifier Objectif{% endblock %}
+{% block content %}
+<h1>Modifier Objectif</h1>
+{% if message %}
+<div class="alert alert-{{ 'success' if message_type=='success' else 'danger' }}">{{ message }}</div>
+{% endif %}
+<form method="post">
+  <div class="mb-2"><input class="form-control" type="text" name="title" value="{{ goal.title }}" required></div>
+  <div class="mb-2"><input class="form-control" type="text" name="description" value="{{ goal.description }}"></div>
+  <div class="mb-2"><input class="form-control" type="text" name="category" value="{{ goal.category }}"></div>
+  <div class="mb-2"><input class="form-control" type="number" name="progress" value="{{ goal.progress }}"></div>
+  <div class="mb-2"><input class="form-control" type="number" name="target_bpm" value="{{ goal.target_bpm }}"></div>
+  <button class="btn btn-primary">Enregistrer</button>
+</form>
+{% endblock %}

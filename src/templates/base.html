@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Métronome{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{ url_for('main.index') }}">Métronome</a>
+    <div class="navbar-nav">
+      <a class="nav-link" href="{{ url_for('main.index') }}">Accueil</a>
+      <a class="nav-link" href="{{ url_for('recordings.list_recordings') }}">Enregistrements</a>
+      <a class="nav-link" href="{{ url_for('songs.manage_songs') }}">Chansons</a>
+      <a class="nav-link" href="{{ url_for('goals.guitar_goals') }}">Objectifs</a>
+      <a class="nav-link" href="{{ url_for('songsterr.manage_links') }}">Songsterr</a>
+    </div>
+  </div>
+</nav>
+<div class="container">
+{% block content %}{% endblock %}
+</div>
+<script src="{{ url_for('static', filename='css/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>

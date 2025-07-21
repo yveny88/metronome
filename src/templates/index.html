@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Métronome{% endblock %}
+{% block content %}
+<h1>Métronome Prioritaire</h1>
+<ul class="list-group">
+{% for song in songs %}
+<li class="list-group-item">{{ song.title }} - {{ song.bpm }} BPM</li>
+{% endfor %}
+</ul>
+{% endblock %}
