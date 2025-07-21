@@ -613,8 +613,18 @@ HTML = """
         recordBtn.onclick = async function() {
             if (recordBtn.textContent === 'Start Recording') {
                 recordedChunks = [];
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        sampleRate: { ideal: 48000 },
+                        channelCount: { ideal: 2 },
+                        noiseSuppression: false,
+                        echoCancellation: false
+                    }
+                });
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus',
+                    audioBitsPerSecond: 256000
+                });
                 mediaRecorder.ondataavailable = e => {
                     if (e.data.size > 0) recordedChunks.push(e.data);
                 };
