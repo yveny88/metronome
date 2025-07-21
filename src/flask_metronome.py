@@ -432,6 +432,7 @@ HTML = """
         <button id="full-workout">Full Workout</button>
         <button id="stop-btn" disabled>Arrêter</button>
         <button id="update-speeds" style="margin-left: 20px; background-color: #2ecc71; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Mettre à jour les vitesses</button>
+        <button id="record-btn" style="margin-left: 20px;">Start Recording</button>
     </div>
     <div id="dot" class="dot">●</div>
     <div id="current-bpm" class="current-bpm">100 BPM</div>
@@ -604,6 +605,32 @@ HTML = """
         const countdownDiv = document.getElementById('countdown');
         const beatsInput = document.getElementById('beats');
         const interMeasuresInput = document.getElementById('interMeasures');
+
+        const recordBtn = document.getElementById('record-btn');
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        recordBtn.onclick = async function() {
+            if (recordBtn.textContent === 'Start Recording') {
+                recordedChunks = [];
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+                mediaRecorder.onstop = async () => {
+                    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    const formData = new FormData();
+                    formData.append('file', blob, 'recording.webm');
+                    await fetch('/upload-recording', { method: 'POST', body: formData });
+                };
+                mediaRecorder.start();
+                recordBtn.textContent = 'Stop Recording';
+            } else {
+                mediaRecorder.stop();
+                recordBtn.textContent = 'Start Recording';
+            }
+        };
         
         // Variable pour contrôler l'arrêt du métronome
         let shouldStop = false;
@@ -1948,6 +1975,15 @@ def delete_songsterr_link(song_name):
         
         links = SongsterrLink.query.all()
         return render_template_string(SONGSTERR_LINKS_HTML, links=links, message=message, message_type=message_type)
+
+@app.route("/upload-recording", methods=['POST'])
+def upload_recording():
+    file = request.files.get('file')
+    if file:
+        save_path = os.path.join('/app/data', 'recording.webm')
+        file.save(save_path)
+        return jsonify({"message": "Fichier enregistré"}), 200
+    return jsonify({"error": "Aucun fichier"}), 400
 
 @app.route("/update-songsterr-links-order", methods=['POST'])
 def update_songsterr_links_order():
