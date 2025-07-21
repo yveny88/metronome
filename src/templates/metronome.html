@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Métronome{% endblock %}
+{% block content %}
+<h1>Métronome</h1>
+<div class="row justify-content-center mb-3">
+  <div class="col-auto">
+    <input id="bpm" type="number" class="form-control" min="40" max="208" value="120">
+  </div>
+  <div class="col-auto">
+    <button id="toggle" class="btn btn-primary">Start</button>
+  </div>
+</div>
+<div id="indicator" style="font-size:80px;color:gray;">&#9679;</div>
+<audio id="click" src="{{ url_for('static', filename='metronome-85688.mp3') }}"></audio>
+<script>
+let playing=false;
+let interval=null;
+const indicator=document.getElementById('indicator');
+const audio=document.getElementById('click');
+function start(){
+  const bpm=parseInt(document.getElementById('bpm').value)||120;
+  const delay=60000/bpm;
+  interval=setInterval(()=>{
+    indicator.style.color='red';
+    audio.currentTime=0;
+    audio.play();
+    setTimeout(()=>{indicator.style.color='gray';},100);
+  },delay);
+}
+function stop(){
+  clearInterval(interval);
+  indicator.style.color='gray';
+}
+ document.getElementById('toggle').onclick=function(){
+   if(!playing){
+     playing=true;this.textContent='Stop';start();
+   }else{
+     playing=false;this.textContent='Start';stop();
+   }
+ };
+</script>
+{% endblock %}
