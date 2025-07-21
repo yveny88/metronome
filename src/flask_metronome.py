@@ -612,6 +612,12 @@ HTML = """
         let recordedChunks = [];
         let currentFilename = '';
 
+        function getTimestamp() {
+            const now = new Date();
+            const pad = n => n.toString().padStart(2, '0');
+            return `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+        }
+
         async function startRecording(filename) {
             recordedChunks = [];
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -638,7 +644,7 @@ HTML = """
 
         recordBtn.onclick = async function() {
             if (recordBtn.textContent === 'Start Recording') {
-                const filename = `manual_${Date.now()}.webm`;
+                const filename = `manual_${getTimestamp()}.webm`;
                 await startRecording(filename);
                 recordBtn.textContent = 'Stop Recording';
             } else {
@@ -661,7 +667,7 @@ HTML = """
 
             const selectedOption = document.getElementById('song-select').options[document.getElementById('song-select').selectedIndex];
             const title = selectedOption ? selectedOption.dataset.title || 'cycle' : 'cycle';
-            const filename = `${title.replace(/\s+/g, '_')}_${Date.now()}.webm`;
+            const filename = `${title.replace(/\s+/g, '_')}_${getTimestamp()}.webm`;
             await startRecording(filename);
 
             const bpm1 = parseInt(bpmInputs[0].value);
@@ -694,7 +700,7 @@ HTML = """
                 createIntermediateDots2();
                 createFinalDots();
 
-                const filename = `${song.title.replace(/\s+/g, '_')}_${Date.now()}.webm`;
+                const filename = `${song.title.replace(/\s+/g, '_')}_${getTimestamp()}.webm`;
                 await startRecording(filename);
 
                 await playCountdown(parseInt(song.min_speed));
@@ -996,16 +1002,25 @@ RECORDINGS_HTML = """
         .back-btn { display: inline-block; padding: 10px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
         .recording { margin-bottom: 15px; }
         audio { display: block; margin-top: 8px; }
+        .delete-icon { color: #e74c3c; text-decoration: none; margin-left: 10px; font-size: 18px; }
+        .delete-icon:hover { color: #c0392b; }
+        .message { padding: 10px; margin: 10px 0; border-radius: 4px; text-align: center; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
     <a href="/" class="back-btn">Retour au Métronome</a>
     <h1>Liste des enregistrements</h1>
+    {% if message %}
+    <div class="message {{ message_type }}">{{ message }}</div>
+    {% endif %}
     {% if recordings %}
     <ul>
     {% for rec in recordings %}
         <li class="recording">
             {{ rec }}
+            <a href="/delete-recording/{{ rec }}" class="delete-icon" onclick="return confirm('Supprimer cet enregistrement ?')">🗑️</a>
             <audio controls src="{{ url_for('data_file', filename=rec) }}"></audio>
         </li>
     {% endfor %}
@@ -1805,11 +1820,29 @@ def recordings_page():
         files = [f for f in os.listdir(recordings_dir) if f.lower().endswith(('.webm', '.wav', '.mp3'))]
     except FileNotFoundError:
         files = []
-    return render_template_string(RECORDINGS_HTML, recordings=files)
+    return render_template_string(RECORDINGS_HTML, recordings=files, message=None, message_type=None)
 
 @app.route('/data/<path:filename>')
 def data_file(filename):
     return send_from_directory('/app/data', filename)
+
+@app.route('/delete-recording/<path:filename>')
+def delete_recording(filename):
+    recordings_dir = '/app/data'
+    safe_name = secure_filename(filename)
+    file_path = os.path.join(recordings_dir, safe_name)
+    message = ""
+    message_type = ""
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            message = "Enregistrement supprimé."
+            message_type = "success"
+    except Exception as e:
+        message = f"Erreur lors de la suppression : {str(e)}"
+        message_type = "error"
+    files = [f for f in os.listdir(recordings_dir) if f.lower().endswith(('.webm', '.wav', '.mp3'))]
+    return render_template_string(RECORDINGS_HTML, recordings=files, message=message, message_type=message_type)
 
 @app.route("/manage-songs", methods=['GET', 'POST'])
 def manage_songs():
