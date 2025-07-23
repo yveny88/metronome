@@ -8,9 +8,9 @@ def init_db():
     if Song.query.count() == 0:
         # Ajouter 3 chansons
         songs = [
-            Song(title="Sweet Home Alabama", bpm=100, beats_per_measure=4),
-            Song(title="Sweet Child O' Mine", bpm=120, beats_per_measure=4),
-            Song(title="Back in Black", bpm=140, beats_per_measure=4)
+            Song(title="Sweet Home Alabama", bpm=100, beats_per_measure=4, intermediate_measures=1),
+            Song(title="Sweet Child O' Mine", bpm=120, beats_per_measure=4, intermediate_measures=1),
+            Song(title="Back in Black", bpm=140, beats_per_measure=4, intermediate_measures=1)
         ]
         for song in songs:
             db.session.add(song)
@@ -22,7 +22,8 @@ def add_song():
     new_song = Song(
         title=data['title'],
         bpm=data['bpm'],
-        beats_per_measure=data['beats_per_measure']
+        beats_per_measure=data['beats_per_measure'],
+        intermediate_measures=data.get('intermediate_measures', 1)
     )
     db.session.add(new_song)
     db.session.commit()

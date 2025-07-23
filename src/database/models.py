@@ -7,6 +7,7 @@ class Song(db.Model):
     title = db.Column(db.String(100), nullable=False)
     bpm = db.Column(db.Integer, nullable=False)
     beats_per_measure = db.Column(db.Integer, default=4)
+    intermediate_measures = db.Column(db.Integer, default=1)
     min_speed = db.Column(db.Integer, default=60)  # Vitesse minimale recommandée
     max_speed = db.Column(db.Integer, default=120)  # Vitesse maximale recommandée
     challenge_speed = db.Column(db.Integer, default=140)  # Vitesse de défi
@@ -18,6 +19,7 @@ class Song(db.Model):
             "title": self.title,
             "bpm": self.bpm,
             "beats_per_measure": self.beats_per_measure,
+            "intermediate_measures": self.intermediate_measures,
             "min_speed": self.min_speed,
             "max_speed": self.max_speed,
             "challenge_speed": self.challenge_speed,

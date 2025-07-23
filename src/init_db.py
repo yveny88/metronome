@@ -16,9 +16,9 @@ with app.app_context():
     db.create_all()
     if Song.query.count() == 0:
         songs = [
-            Song(title="Sweet Home Alabama", bpm=100, beats_per_measure=4),
-            Song(title="Sweet Child O' Mine", bpm=120, beats_per_measure=4),
-            Song(title="Back in Black", bpm=140, beats_per_measure=4)
+            Song(title="Sweet Home Alabama", bpm=100, beats_per_measure=4, intermediate_measures=1),
+            Song(title="Sweet Child O' Mine", bpm=120, beats_per_measure=4, intermediate_measures=1),
+            Song(title="Back in Black", bpm=140, beats_per_measure=4, intermediate_measures=1)
         ]
         db.session.bulk_save_objects(songs)
         db.session.commit()
