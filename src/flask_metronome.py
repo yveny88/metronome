@@ -9,11 +9,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.database.models import db, Song, GuitarGoal, SongsterrLink
 from src.routes.song_routes import song_bp, init_db
+from config import get_sqlalchemy_uri
 
 app = Flask(__name__)
-# Utiliser un chemin dans le volume Docker pour la base de données
-db_path = os.path.join('/app/data', 'metronome.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+app.config['SQLALCHEMY_DATABASE_URI'] = get_sqlalchemy_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialiser la base de données

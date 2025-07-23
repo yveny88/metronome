@@ -1,13 +1,9 @@
-import os
-from database.models import db, Song
 from flask import Flask
-
-# Chemin absolu pour garantir la création dans le dossier metronome
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, '..', 'metronome.db')
+from database.models import db, Song
+from config import get_sqlalchemy_uri
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
+app.config['SQLALCHEMY_DATABASE_URI'] = get_sqlalchemy_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
