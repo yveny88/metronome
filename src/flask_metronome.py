@@ -374,7 +374,8 @@ HTML = """
                     data-title="{{ song.title }}"
                     data-min-speed="{{ song.min_speed }}"
                     data-max-speed="{{ song.max_speed }}"
-                    data-challenge-speed="{{ song.challenge_speed }}">
+                    data-challenge-speed="{{ song.challenge_speed }}"
+                    data-inter-measures="{{ song.intermediate_measures }}">
                 {{ song.title }} ({{ song.bpm }} BPM)
             </option>
             {% endfor %}
@@ -393,6 +394,9 @@ HTML = """
             <div><strong>Min Speed:</strong> <span id="min-speed"></span></div>
             <div><strong>Max Speed:</strong> <span id="max-speed"></span></div>
             <div><strong>Challenge Speed:</strong> <span id="challenge-speed"></span></div>
+        </div>
+        <div style="margin-top: 10px;">
+            <strong>Mesures intermédiaires :</strong> <span id="inter-measures-display"></span>
         </div>
     </div>
 
@@ -456,7 +460,8 @@ HTML = """
                 bpm: {{ song.bpm }},
                 min_speed: {{ song.min_speed }},
                 max_speed: {{ song.max_speed }},
-                challenge_speed: {{ song.challenge_speed }}
+                challenge_speed: {{ song.challenge_speed }},
+                intermediate_measures: {{ song.intermediate_measures }}
             }{% if not loop.last %},{% endif %}
             {% endfor %}
         ];
@@ -702,6 +707,7 @@ HTML = """
                 bpmInputs[0].value = song.min_speed;
                 bpmInputs[1].value = song.max_speed;
                 bpmInputs[2].value = song.challenge_speed;
+                interMeasuresInput.value = song.intermediate_measures;
                 createSliders();
                 createIntermediateDots1();
                 createIntermediateDots2();
@@ -865,6 +871,7 @@ HTML = """
                 document.getElementById('min-speed').textContent = song.min_speed;
                 document.getElementById('max-speed').textContent = song.max_speed;
                 document.getElementById('challenge-speed').textContent = song.challenge_speed;
+                document.getElementById('inter-measures-display').textContent = song.intermediate_measures;
                 songInfo.style.display = 'block';
             } else {
                 songInfo.style.display = 'none';
@@ -888,6 +895,7 @@ HTML = """
                 bpmInputs[0].value = selectedOption.dataset.minSpeed;
                 bpmInputs[1].value = selectedOption.dataset.maxSpeed;
                 bpmInputs[2].value = selectedOption.dataset.challengeSpeed;
+                interMeasuresInput.value = selectedOption.dataset.interMeasures;
 
                 // Mettre à jour l'affichage des sliders
                 createSliders();
@@ -913,6 +921,7 @@ HTML = """
             const minSpeed = bpmInputs[0].value;
             const maxSpeed = bpmInputs[1].value;
             const challengeSpeed = bpmInputs[2].value;
+            const interMeasures = interMeasuresInput.value;
 
             try {
                 const response = await fetch(`/update-song-speeds/${songId}`, {
@@ -923,7 +932,8 @@ HTML = """
                     body: JSON.stringify({
                         min_speed: minSpeed,
                         max_speed: maxSpeed,
-                        challenge_speed: challengeSpeed
+                        challenge_speed: challengeSpeed,
+                        intermediate_measures: interMeasures
                     })
                 });
 
@@ -933,6 +943,7 @@ HTML = """
                     selectedOption.dataset.minSpeed = minSpeed;
                     selectedOption.dataset.maxSpeed = maxSpeed;
                     selectedOption.dataset.challengeSpeed = challengeSpeed;
+                    selectedOption.dataset.interMeasures = interMeasures;
                 } else {
                     alert('Erreur lors de la mise à jour des vitesses');
                 }
@@ -1188,6 +1199,10 @@ MANAGE_SONGS_HTML = """
                 <label for="challenge_speed">Vitesse de défi (BPM) :</label>
                 <input type="number" id="challenge_speed" name="challenge_speed" min="40" max="240" value="140">
             </div>
+            <div class="form-group">
+                <label for="intermediate_measures">Mesures intermédiaires :</label>
+                <input type="number" id="intermediate_measures" name="intermediate_measures" min="1" max="8" value="1">
+            </div>
             <button type="submit" class="submit-btn">Ajouter la chanson</button>
         </form>
         <button id="apply-changes-btn" class="apply-btn">Apply changes</button>
@@ -1201,7 +1216,7 @@ MANAGE_SONGS_HTML = """
                         <div class="song-info">
                             <span class="song-title">{{ song.title }}</span>
                             <span class="song-bpm">{{ song.bpm }} BPM</span>
-                            <div class="song-speeds">Vitesses : Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }}</div>
+                            <div class="song-speeds">Vitesses : Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }} | Mesures : {{ song.intermediate_measures }}</div>
                         </div>
                     </div>
                     {% endfor %}
@@ -1215,7 +1230,7 @@ MANAGE_SONGS_HTML = """
                         <div class="song-info">
                             <span class="song-title">{{ song.title }}</span>
                             <span class="song-bpm">{{ song.bpm }} BPM</span>
-                            <div class="song-speeds">Vitesses : Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }}</div>
+                            <div class="song-speeds">Vitesses : Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }} | Mesures : {{ song.intermediate_measures }}</div>
                         </div>
                     </div>
                     {% endfor %}
@@ -1860,12 +1875,14 @@ def manage_songs():
             min_speed = request.form.get('min_speed', 60)
             max_speed = request.form.get('max_speed', 120)
             challenge_speed = request.form.get('challenge_speed', 140)
+            intermediate_measures = request.form.get('intermediate_measures', 1)
             
             try:
                 bpm = int(bpm)
                 min_speed = int(min_speed)
                 max_speed = int(max_speed)
                 challenge_speed = int(challenge_speed)
+                intermediate_measures = int(intermediate_measures)
                 
                 if not (40 <= bpm <= 240):
                     return render_template_string(
@@ -1879,6 +1896,7 @@ def manage_songs():
                     title=title,
                     bpm=bpm,
                     beats_per_measure=4,
+                    intermediate_measures=intermediate_measures,
                     min_speed=min_speed,
                     max_speed=max_speed,
                     challenge_speed=challenge_speed
@@ -2018,10 +2036,12 @@ def update_song_speeds(song_id):
         try:
             song = Song.query.get_or_404(song_id)
             data = request.get_json()
-            
+
             song.min_speed = int(data['min_speed'])
             song.max_speed = int(data['max_speed'])
             song.challenge_speed = int(data['challenge_speed'])
+            if 'intermediate_measures' in data:
+                song.intermediate_measures = int(data['intermediate_measures'])
             
             db.session.commit()
             return jsonify({"message": "Vitesses mises à jour avec succès"}), 200
