@@ -20,6 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copie du code source
 COPY src/ ./src/
+COPY upgrade_db.py .
 
 EXPOSE 5000
 
