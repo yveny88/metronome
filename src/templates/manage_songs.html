@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Gestion des Chansons - Métronome</title>
+    <style>
+        .columns {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+        }
+        .song-column {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 18px 12px;
+            min-width: 320px;
+            box-shadow: 0 2px 8px #0001;
+        }
+        .column-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 18px;
+            text-align: center;
+            color: #1976d2;
+        }
+        .song-list {
+            min-height: 60px;
+        }
+        .song-item {
+            background: #fff;
+            padding: 14px 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px #0001;
+            cursor: move;
+        }
+        .song-item.dragging {
+            opacity: 0.5;
+            background: #e3f0ff;
+        }
+        .song-info { flex: 1; display: flex; flex-direction: column; }
+        .song-title { font-weight: bold; color: #2c3e50; font-size: 16px; }
+        .song-bpm { color: #7f8c8d; margin-left: 8px; font-size: 14px; }
+        .song-speeds { color: #444; font-size: 13px; }
+        .apply-btn {
+            display: block;
+            margin: 0 auto 24px auto;
+            padding: 12px 32px;
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .apply-btn:hover {
+            background: #1256a3;
+        }
+        /* --- Formulaire joli --- */
+        .add-song-form {
+            background: #f8f9fa;
+            padding: 28px 32px 22px 32px;
+            border-radius: 10px;
+            margin: 30px auto 30px auto;
+            max-width: 420px;
+            box-shadow: 0 2px 12px #0001;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .add-song-form h2 {
+            font-size: 1.4em;
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group label {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .form-group input {
+            padding: 10px 12px;
+            border: 1px solid #cfd8dc;
+            border-radius: 6px;
+            font-size: 16px;
+            background: #fff;
+            transition: border 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #1976d2;
+            background: #e3f0ff;
+        }
+        .submit-btn {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 0;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .submit-btn:hover {
+            background: #1256a3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestion des Chansons</h1>
+        <a href="/" class="back-btn">Retour au Métronome</a>
+        {% if message %}
+        <div class="message {{ message_type }}">{{ message }}</div>
+        {% endif %}
+        <h2>Ajouter une nouvelle chanson</h2>
+        <form action="/manage-songs" method="POST" class="add-song-form">
+            <h2>Ajouter une nouvelle chanson</h2>
+            <div class="form-group">
+                <label for="title">Titre de la chanson :</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="bpm">BPM :</label>
+                <input type="number" id="bpm" name="bpm" min="40" max="240" required>
+            </div>
+            <div class="form-group">
+                <label for="min_speed">Vitesse minimale (BPM) :</label>
+                <input type="number" id="min_speed" name="min_speed" min="40" max="240" value="60">
+            </div>
+            <div class="form-group">
+                <label for="max_speed">Vitesse maximale (BPM) :</label>
+                <input type="number" id="max_speed" name="max_speed" min="40" max="240" value="120">
+            </div>
+            <div class="form-group">
+                <label for="challenge_speed">Vitesse de défi (BPM) :</label>
+                <input type="number" id="challenge_speed" name="challenge_speed" min="40" max="240" value="140">
+            </div>
+            <div class="form-group">
+                <label for="intermediate_measures">Mesures intermédiaires :</label>
+                <input type="number" id="intermediate_measures" name="intermediate_measures" min="1" max="8" value="1">
+            </div>
+            <button type="submit" class="submit-btn">Ajouter la chanson</button>
+        </form>
+        <button id="apply-changes-btn" class="apply-btn">Apply changes</button>
+        <h2 style="margin-top:40px;">Liste des chansons</h2>
+        <div class="columns">
+            <div class="song-column" id="normal-column">
+                <div class="column-title">Normal</div>
+                <div class="song-list" id="normal-list">
+                    {% for song in songs if not song.prioritaire %}
+                    <div class="song-item" draggable="true" data-id="{{ song.id }}">
+                        <div class="song-info">
+                            <span class="song-title">{{ song.title }}</span>
+                            <span class="song-bpm">{{ song.bpm }} BPM</span>
+                            <div class="song-speeds">Vitesses : Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }} | Mesures : {{ song.intermediate_measures }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="song-column" id="priority-column">
+                <div class="column-title">Priority</div>
+                <div class="song-list" id="priority-list">
+                    {% for song in songs if song.prioritaire %}
+                    <div class="song-item" draggable="true" data-id="{{ song.id }}">
+                        <div class="song-info">
+                            <span class="song-title">{{ song.title }}</span>
+                            <span class="song-bpm">{{ song.bpm }} BPM</span>
+                            <div class="song-speeds">Vitesses : Min: {{ song.min_speed }} | Max: {{ song.max_speed }} | Défi: {{ song.challenge_speed }} | Mesures : {{ song.intermediate_measures }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function setupDragAndDrop(listId, otherListId, prioritaireValue) {
+            const list = document.getElementById(listId);
+            const otherList = document.getElementById(otherListId);
+            let draggedItem = null;
+
+            list.addEventListener('dragstart', function(e) {
+                if (e.target.classList.contains('song-item')) {
+                    draggedItem = e.target;
+                    e.target.classList.add('dragging');
+                }
+            });
+            list.addEventListener('dragend', function(e) {
+                if (e.target.classList.contains('song-item')) {
+                    e.target.classList.remove('dragging');
+                    draggedItem = null;
+                    sendOrderUpdate();
+                }
+            });
+            list.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const currentDragged = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    list.appendChild(currentDragged);
+                } else {
+                    list.insertBefore(currentDragged, afterElement);
+                }
+            });
+            list.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (draggedItem && draggedItem.parentNode !== list) {
+                    list.appendChild(draggedItem);
+                }
+            });
+            otherList.addEventListener('dragover', function(e) { e.preventDefault(); });
+        }
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.song-item:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        function sendOrderUpdate(showAlert = false) {
+            const normalIds = Array.from(document.querySelectorAll('#normal-list .song-item')).map(item => item.dataset.id);
+            const priorityIds = Array.from(document.querySelectorAll('#priority-list .song-item')).map(item => item.dataset.id);
+            fetch('/update-songs-order-and-priority', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ normal: normalIds, priority: priorityIds })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (showAlert) {
+                    if (data.message) {
+                        alert('Changements appliqués !');
+                    } else if (data.error) {
+                        alert('Erreur : ' + data.error);
+                    }
+                }
+            });
+        }
+        document.getElementById('apply-changes-btn').onclick = function() {
+            sendOrderUpdate(true);
+        };
+        setupDragAndDrop('normal-list', 'priority-list', 0);
+        setupDragAndDrop('priority-list', 'normal-list', 1);
+    </script>
+</body>
+</html>
