@@ -1,7 +1,10 @@
 import sqlite3
 import os
 
-DB_PATH = os.environ.get('DB_PATH', 'metronome.db')
+default_path = '/app/data/metronome.db'
+if not os.path.exists(default_path):
+    default_path = 'metronome.db'
+DB_PATH = os.environ.get('DB_PATH', default_path)
 
 conn = sqlite3.connect(DB_PATH)
 cur = conn.cursor()

@@ -20,7 +20,7 @@ docker-compose up --build
 Si la structure de la base de données change (par exemple ajout de nouvelles colonnes),
 exécutez le script `upgrade_db.py` pour mettre à jour la base existante :
 ```bash
-python upgrade_db.py
+docker-compose run --rm metronome python upgrade_db.py
 ```
 
 ## Installation manuelle
