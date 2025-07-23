@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Modifier l'objectif - Métronome</title>
+    <style>
+        /* ... mêmes styles que GUITAR_GOALS_HTML ... */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Modifier l'objectif</h1>
+        <a href="/guitar-goals" class="back-btn">Retour aux objectifs</a>
+
+        <form action="/edit-goal/{{ goal.id }}" method="POST" class="add-goal-form">
+            <div class="form-group">
+                <label for="title">Titre de l'objectif :</label>
+                <input type="text" id="title" name="title" value="{{ goal.title }}" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description :</label>
+                <input type="text" id="description" name="description" value="{{ goal.description }}" required>
+            </div>
+            <div class="form-group">
+                <label for="category">Catégorie :</label>
+                <select id="category" name="category" required>
+                    <option value="technique" {% if goal.category == 'technique' %}selected{% endif %}>Technique</option>
+                    <option value="repertoire" {% if goal.category == 'repertoire' %}selected{% endif %}>Répertoire</option>
+                    <option value="theorie" {% if goal.category == 'theorie' %}selected{% endif %}>Théorie</option>
+                    <option value="citnk" {% if goal.category == 'citnk' %}selected{% endif %}>CiTNK</option>
+                    <option value="creativite" {% if goal.category == 'creativite' %}selected{% endif %}>Créativité</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="target_bpm">BPM cible (optionnel) :</label>
+                <input type="number" id="target_bpm" name="target_bpm" min="40" max="240" value="{{ goal.target_bpm or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="progress">Progression (0-100) :</label>
+                <input type="number" id="progress" name="progress" min="0" max="100" value="{{ goal.progress }}" required>
+            </div>
+            <button type="submit" class="submit-btn">Mettre à jour l'objectif</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Enregistrements</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .back-btn { display: inline-block; padding: 10px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
+        .recording { margin-bottom: 15px; }
+        audio { display: block; margin-top: 8px; }
+        .delete-icon { color: #e74c3c; text-decoration: none; margin-left: 10px; font-size: 18px; }
+        .delete-icon:hover { color: #c0392b; }
+        .message { padding: 10px; margin: 10px 0; border-radius: 4px; text-align: center; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn">Retour au Métronome</a>
+    <h1>Liste des enregistrements</h1>
+    {% if message %}
+    <div class="message {{ message_type }}">{{ message }}</div>
+    {% endif %}
+    {% if recordings %}
+    <ul>
+    {% for rec in recordings %}
+        <li class="recording">
+            {{ rec }}
+            <a href="/delete-recording/{{ rec }}" class="delete-icon" onclick="return confirm('Supprimer cet enregistrement ?')">🗑️</a>
+            <audio controls src="{{ url_for('data_file', filename=rec) }}"></audio>
+        </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    <p>Aucun enregistrement trouvé.</p>
+    {% endif %}
+</body>
+</html>
